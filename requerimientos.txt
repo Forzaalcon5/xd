@@ -1,0 +1,240 @@
+Número Requerimientos Funcionales
+RF-01 Registro de usuario
+
+La aplicación debe permitir al usuario
+registrarse ingresando datos básicos
+(correo, contraseña u otro método definido).
+el sistema detecta si los datos ingresados
+son de un usuario o de un administrador
+
+RF-02 Inicio de sesión
+
+La aplicación debe permitir al usuario iniciar
+sesión con sus credenciales registradas y
+validarlas en el sistema.
+RF-03 Recuperación de contraseña
+La aplicación debe permitir al usuario
+recuperar su contraseña en caso de olvido.
+
+RF-04 Interacción conversacional
+La aplicación debe permitir al usuario
+comunicarse con un chatbot mediante
+mensajes de texto.
+RF-05 Validación emocional
+
+El chatbot debe responder utilizando un
+lenguaje empático, calmado y sin juicios
+RF-06 Detección de estado emocional
+El sistema debe identificar emociones
+básicas expresadas por el usuario
+(ansiedad, tristeza, estrés).
+RF-07 Sugerencia de actividades
+El chatbot debe sugerir actividades de
+regulación emocional según el estado
+detectado.
+
+RF-08 Acompañamiento continuo
+El chatbot debe estar disponible para
+interactuar con el usuario en cualquier
+momento.
+
+RF-09 Visualización de actividades
+
+La aplicación debe mostrar un listado de
+actividades disponibles (respiración guiada,
+meditación, diario de gratitud, relajación
+progresiva). (las actividades mostradas y
+activa son creadas y habilitadas por el
+administrador)
+RF-10 Asignación de tareas:
+
+La aplicación deberá incentivar al
+usuario a realizar tareas sencillas
+dependen del estado del usuario
+
+RF-11 Historial emocional
+
+La aplicación debe almacenar el historial de
+registros emocionales del usuario.
+RF-12 Visualización de progreso emocional
+La aplicación debe mostrar gráficos del
+estado emocional del usuario por día o
+semana.
+
+RF-13 Detección de riesgo emocional
+La aplicación debe identificar palabras o
+patrones asociados a riesgo emocional
+elevado
+
+RF-14 Navegación entre secciones
+La aplicación debe permitir al usuario
+navegar entre las secciones principales.
+
+RF-15 Cierre de sesión
+
+La aplicación debe permitir al usuario cerrar
+sesión de forma segura.
+
+RNF-01 Confidencialidad de datos
+
+La aplicación debe garantizar la privacidad
+de la información emocional del usuario.
+
+RNF-02 Protección de datos
+
+Los datos deben almacenarse de forma
+segura utilizando mecanismos de cifrado.
+
+RNF-03 Acceso seguro
+
+El sistema debe impedir accesos no
+autorizados a cuentas de usuario.
+
+RNF-04 Tiempo de respuesta
+
+La aplicación debe responder a las
+interacciones del usuario en menos de 2
+segundos.
+
+RNF-05
+
+Disponibilidad
+La aplicación debe estar disponible las 24
+horas del día, los 7 días de la semana.
+
+RNF-06 Interfaz intuitiva
+
+La aplicación debe ser fácil de usar para
+personas sin conocimientos técnicos.
+RNF-07 Diseño amigable y calmado
+
+La interfaz debe utilizar colores suaves,
+tipografía legible y elementos visuales
+tranquilizadores.
+RNF-08 Accesibilidad
+
+La aplicación debe ser usable por personas
+con dificultades visuales o cognitivas leves.
+
+RNF-09 Lenguaje respetuoso
+
+El sistema debe evitar lenguaje ofensivo,
+invalidante o discriminatorio.
+RNF-10 No diagnóstico clínico
+
+La aplicación no debe emitir diagnósticos
+psicológicos ni médicos.
+RNF-11 Derivación responsable
+
+Ante señales de riesgo, la aplicación debe
+priorizar la seguridad del usuario.
+
+RNF-12 Escalabilidad
+
+La aplicación debe permitir la incorporación
+futura de nuevas actividades y funciones.
+
+RNF-13
+
+Mantenibilidad
+El sistema debe estar diseñado para
+facilitar actualizaciones y correcciones.
+
+RNF-14.
+
+Control de acceso por rol
+El sistema debe restringir el acceso a
+funcionalidades según el rol del usuario.
+
+RNF-15.
+
+Protección de privacidad frente al
+administrador
+El sistema debe impedir que el
+administrador acceda a conversaciones o
+registros emocionales personales.
+
+RNF-16
+
+Gestión dinámica de contenido
+La aplicación debe permitir la modificación
+de actividades sin necesidad de actualizar
+la app.
+
+RF-16 Afirmación diaria
+
+La aplicación debe mostrar una frase
+motivacional o afirmación positiva diaria
+al usuario en la pantalla principal, con
+tipografía editorial elegante. La frase
+debe cambiar automáticamente cada día.
+
+RF-17 Saludo dinámico personalizado
+
+La aplicación debe mostrar un saludo
+personalizado según la hora del día
+(Buenos días/tardes/noches) y el nombre
+del usuario en la pantalla principal.
+
+RF-18 Indicador de progreso de bienestar
+
+La aplicación debe mostrar un anillo de
+progreso animado que represente el
+bienestar emocional semanal del usuario
+basado en sus registros de ánimo.
+
+RF-19 Mascota acompañante visual
+
+La aplicación debe incluir un personaje
+mascota visual (Aníma) presente en las
+pantallas principales, que transmita
+empatía y acompañamiento a través de
+diferentes variantes (saludando, meditando,
+empático, respirando, feliz).
+
+RF-20 Sistema de iconografía emocional
+
+La aplicación debe representar los estados
+emocionales mediante iconos vectoriales
+estilizados (no emojis genéricos) que se
+iluminen con colores temáticos cuando el
+usuario los seleccione.
+
+RF-21 Efectos visuales de partículas
+
+La aplicación debe mostrar partículas
+animadas flotantes alrededor de la mascota
+en la pantalla principal, generando un
+efecto de "energía vital" sutil y
+tranquilizador.
+
+RF-22 Fondo dinámico Aurora
+
+La aplicación debe incluir un fondo
+animado con gradientes suaves (aurora)
+que se muevan lentamente, creando una
+atmósfera viva y calmada sin distraer
+al usuario.
+
+RNF-17 Tipografía premium
+
+La aplicación debe utilizar una fuente
+tipográfica profesional (Poppins) en
+todos los títulos, etiquetas y botones
+para garantizar una apariencia premium
+y legibilidad óptima.
+
+RNF-18 Transiciones suaves entre pantallas
+
+La aplicación debe implementar transiciones
+animadas (fade, slide) entre pantallas para
+ofrecer una experiencia de navegación fluida
+y cinematográfica.
+
+RNF-19 Iconografía profesional
+
+La aplicación debe utilizar iconos
+vectoriales profesionales (Ionicons) en
+lugar de emojis del sistema para garantizar
+consistencia visual en todos los dispositivos
+y plataformas.
