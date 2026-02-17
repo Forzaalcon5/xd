@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { SoundService } from '../utils/SoundService';
 
 export type MoodType = 'animado' | 'mejor' | 'neutral' | 'triste' | 'muy_triste';
 
@@ -155,7 +156,10 @@ export const useStore = create<AppState>()(
       
       // Actions
       login: (email, name) => set({ isAuthenticated: true, userEmail: email, userName: name || 'Usuario' }),
-      logout: () => set({ isAuthenticated: false, userName: '', userEmail: '', messages: [] }),
+      logout: () => {
+        SoundService.stopAmbient();
+        set({ isAuthenticated: false, userName: '', userEmail: '', messages: [] });
+      },
       hideSplash: () => set({ showSplash: false }),
       setMood: (mood) => set({ currentMood: mood }),
       saveMoodEntry: () => {

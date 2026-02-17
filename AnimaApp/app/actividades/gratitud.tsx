@@ -33,6 +33,7 @@ import * as Haptics from 'expo-haptics';
 import { Colors, Shadows } from '../../constants/theme';
 import { GlassCard, JewelButton, AuroraBackground } from '../../components/ui';
 import { useStore, JournalEntry } from '../../store/useStore';
+import { SoundService } from '../../utils/SoundService';
 
 // ============ Draggable Star Component ============
 interface FloatingStarProps {
@@ -279,6 +280,7 @@ export default function GratitudeJournalScreen() {
       y: Math.random() * 60 - 30,
       date: new Date().toISOString(),
     };
+    SoundService.play('pop');
     addJournalEntry(newItem);
     setInputText('');
     setShowInput(false);
@@ -298,6 +300,11 @@ export default function GratitudeJournalScreen() {
       <LinearGradient colors={['#E8F4FD', '#F0F6FF', '#FFFFFF']} style={StyleSheet.absoluteFill} />
       <AuroraBackground />
 
+      <KeyboardAvoidingView 
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'} 
+        style={{ flex: 1 }}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+      >
       <Animated.View entering={FadeInDown.duration(400)} style={styles.header}>
         <Pressable onPress={() => router.back()} style={styles.backBtn}>
           <View style={styles.backBtnInner}>
@@ -370,6 +377,7 @@ export default function GratitudeJournalScreen() {
       </Animated.View>
 
       <View style={{ height: 20 }} />
+      </KeyboardAvoidingView>
 
       <EntryDetailModal
         visible={modalVisible} entry={selectedEntry}

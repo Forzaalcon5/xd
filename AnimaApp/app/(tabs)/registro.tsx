@@ -72,7 +72,7 @@ export default function RegistroScreen() {
 
   return (
     <ScreenWrapper style={styles.container}>
-      <FloatingParticles count={3} />
+      <FloatingParticles count={12} persistenceKey="journal_stars_pos_v2" />
 
       <ScrollView
         style={styles.scroll}

@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   View, Text, StyleSheet, Pressable, ViewStyle, TextStyle,
   Dimensions, Platform, Image, ImageSourcePropType,
@@ -12,6 +12,8 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Shadows, BorderRadius, Gradients, Typography, MoodConfig, MoodType } from '../constants/theme';
 
+const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
+
 // Mascot images (RF-19)
 const MASCOT_IMAGES: Record<string, ImageSourcePropType> = {
   happy: require('../assets/images/mascot/saludando.png'),
@@ -21,18 +23,20 @@ const MASCOT_IMAGES: Record<string, ImageSourcePropType> = {
   meditating: require('../assets/images/mascot/meditando.png'),
 };
 
-const { width: SCREEN_W } = Dimensions.get('window');
 
 // ============================================================
 // AURORA ANIMATED BACKGROUND  (RF-22)
 // ============================================================
-export function AuroraBackground() {
+import { SoundService } from '../utils/SoundService';
+import * as Haptics from 'expo-haptics';
 
+// ... (imports)
 
-  // Parallax Sensor
+// ============================================================
+// AURORA ANIMATED BACKGROUND  (RF-22)
+// ============================================================
+export const AuroraBackground = React.memo(function AuroraBackground() {
   const sensor = useAnimatedSensor(SensorType.GYROSCOPE, { interval: 100 });
-
-  // Continuous breathing animation for blobs
   const blob1Anim = useSharedValue(0);
   const blob2Anim = useSharedValue(0);
   const blob3Anim = useSharedValue(0);
@@ -75,7 +79,7 @@ export function AuroraBackground() {
     return {
       transform: [
         { translateX: withSpring(y * -15 + interpolate(blob2Anim.value, [0, 1], [0, -20])) },
-        { translateY: withSpring(x * -15 + interpolate(blob2Anim.value, [0, 1], [0, 20])) }, // Opposing movement
+        { translateY: withSpring(x * -15 + interpolate(blob2Anim.value, [0, 1], [0, 20])) },
         { scale: interpolate(blob2Anim.value, [0, 1], [1, 1.15]) },
       ],
       opacity: interpolate(blob2Anim.value, [0, 1], [0.5, 0.3]),
@@ -95,18 +99,13 @@ export function AuroraBackground() {
 
   return (
     <View style={StyleSheet.absoluteFill} pointerEvents="none">
-      {/* Top Left - Primary Blue */}
       <Animated.View style={[styles.auroraBlob, styles.blob1, style1]} />
-      {/* Center Right - Secondary Purple */}
       <Animated.View style={[styles.auroraBlob, styles.blob2, style2]} />
-      {/* NEW: Bottom Center/Right - Warm Accent */}
       <Animated.View style={[styles.auroraBlob, styles.blob3, style3]} />
       <View style={styles.frostOverlay} />
     </View>
   );
-}
-
-import * as Haptics from 'expo-haptics';
+});
 
 // ============================================================
 // GLASS CARD  (glassmorphism effect)
@@ -115,29 +114,43 @@ interface GlassCardProps {
   children: React.ReactNode;
   style?: ViewStyle;
   onPress?: () => void;
+  intensity?: number;
 }
 
-export function GlassCard({ children, style, onPress }: GlassCardProps) {
+export function GlassCard({ children, style, onPress, intensity = 50 }: GlassCardProps) {
   const scale = useSharedValue(1);
+  const animStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
 
-  const animStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value }],
-  }));
+  const handlePressIn = () => { if (onPress) scale.value = withSpring(0.97, { damping: 15, stiffness: 200 }); };
+  const handlePressOut = () => { if (onPress) scale.value = withSpring(1, { damping: 15, stiffness: 200 }); };
 
-  const handlePressIn = () => {
-    if (onPress) scale.value = withSpring(0.97, { damping: 15, stiffness: 200 });
-  };
-  const handlePressOut = () => {
-    if (onPress) scale.value = withSpring(1, { damping: 15, stiffness: 200 });
-  };
-
-  return (
-    <Pressable onPress={onPress} onPressIn={handlePressIn} onPressOut={handlePressOut} disabled={!onPress}>
-      <Animated.View style={[styles.glassCard, animStyle, style]}>
-        {children}
-      </Animated.View>
-    </Pressable>
+  const Content = (
+    <Animated.View style={[
+      styles.glassCard, 
+      animStyle, 
+      style, 
+      { backgroundColor: 'rgba(255, 255, 255, 0.85)', overflow: 'hidden', padding: 16 }
+    ]}>
+      {children}
+    </Animated.View>
   );
+
+  if (onPress) {
+    return (
+      <Pressable
+        onPress={() => {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          SoundService.play('click');
+          onPress();
+        }}
+        onPressIn={handlePressIn}
+        onPressOut={handlePressOut}
+      >
+        {Content}
+      </Pressable>
+    );
+  }
+  return Content;
 }
 
 // ============================================================
@@ -162,7 +175,10 @@ export function JewelButton({ title, onPress, icon, colors, style, disabled }: J
   return (
     <Pressable
       onPress={() => {
-        if (!disabled) Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        if (!disabled) {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          SoundService.play('click');
+        }
         onPress();
       }}
       onPressIn={() => { scale.value = withSpring(0.95, { damping: 15 }); }}
@@ -237,7 +253,10 @@ export function MoodButton({ mood, selected, onPress }: MoodButtonProps) {
   }));
 
   return (
-    <Pressable onPress={onPress} style={styles.moodButtonWrap}>
+    <Pressable onPress={() => {
+      SoundService.play('click');
+      onPress();
+    }} style={styles.moodButtonWrap}>
       <Animated.View style={[styles.moodButton, animStyle]}>
         <View style={[
           styles.moodIconCircle,
@@ -263,14 +282,16 @@ export function MoodButton({ mood, selected, onPress }: MoodButtonProps) {
 interface MascotProps {
   size?: number;
   style?: ViewStyle;
-  variant?: 'happy' | 'greeting' | 'empathetic' | 'breathing';
+  variant?: 'happy' | 'greeting' | 'empathetic' | 'breathing' | 'meditating';
 }
 
 export function Mascot({ size = 120, style, variant = 'happy' }: MascotProps) {
   const floatY = useSharedValue(0);
   const glow = useSharedValue(0);
+  const breathScale = useSharedValue(1);
 
   useEffect(() => {
+    // Floating animation
     floatY.value = withRepeat(
       withSequence(
         withTiming(-8, { duration: 2000, easing: Easing.inOut(Easing.ease) }),
@@ -278,11 +299,24 @@ export function Mascot({ size = 120, style, variant = 'happy' }: MascotProps) {
       ),
       -1, true
     );
+    
+    // Glow animation
     glow.value = withRepeat(
       withTiming(1, { duration: 3000, easing: Easing.inOut(Easing.ease) }),
       -1, true
     );
-  }, []);
+
+    // Breathing animation logic
+    if (variant === 'breathing' || variant === 'meditating') {
+      breathScale.value = withRepeat(
+        withSequence(
+          withTiming(1.08, { duration: 4000, easing: Easing.inOut(Easing.ease) }), // Inhale
+          withTiming(1, { duration: 4000, easing: Easing.out(Easing.ease) })       // Exhale
+        ),
+        -1, true
+      );
+    }
+  }, [variant]);
 
   const floatStyle = useAnimatedStyle(() => ({
     transform: [{ translateY: floatY.value }],
@@ -293,10 +327,14 @@ export function Mascot({ size = 120, style, variant = 'happy' }: MascotProps) {
     transform: [{ scale: interpolate(glow.value, [0, 1], [0.9, 1.1]) }],
   }));
 
+  const breathStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: breathScale.value }],
+  }));
+
   const imageSource = MASCOT_IMAGES[variant] || MASCOT_IMAGES.happy;
 
   return (
-    <Animated.View style={[styles.mascotContainer, { width: size, height: size }, floatStyle, style]}>
+    <Animated.View style={[styles.mascotContainer, { width: size, height: size }, floatStyle, breathStyle, style]}>
       {/* Glow behind mascot */}
       <Animated.View style={[styles.mascotGlow, { width: size * 1.3, height: size * 1.3 }, glowStyle]} />
       {/* Mascot image */}
@@ -309,20 +347,73 @@ export function Mascot({ size = 120, style, variant = 'happy' }: MascotProps) {
   );
 }
 
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
 // ============================================================
 // FLOATING PARTICLES  (RF-21 — subtle energy particles)
 // ============================================================
-export function FloatingParticles({ count = 6 }: { count?: number }) {
+interface FloatingParticlesProps {
+  count?: number;
+  persistenceKey?: string; // New prop for saving positions
+}
+
+export function FloatingParticles({ count = 6, persistenceKey }: FloatingParticlesProps) {
+  const [positions, setPositions] = useState<{ x: number; y: number }[]>([]);
+  const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    if (!persistenceKey) {
+      // Fallback for non-persistent usage (e.g. Login)
+      // Generate random once to avoid re-renders, or just let Particle handle it (legacy)
+      setPositions(Array.from({ length: count }).map((_, i) => ({
+        x: 20 + (i * (SCREEN_W - 40)) / count, // Linear X
+        y: 200 + Math.random() * 200,          // Band Y
+      })));
+      setLoaded(true);
+      return;
+    }
+
+    const loadPositions = async () => {
+      try {
+        const stored = await AsyncStorage.getItem(persistenceKey);
+        if (stored) {
+          setPositions(JSON.parse(stored));
+        } else {
+          // New random positions dispersed across the WHOLE screen
+          const newPositions = Array.from({ length: count }).map(() => ({
+            x: Math.random() * (SCREEN_W - 40) + 20,
+            y: Math.random() * (SCREEN_H - 100) + 50, // Full height scatter
+          }));
+          setPositions(newPositions);
+          await AsyncStorage.setItem(persistenceKey, JSON.stringify(newPositions));
+        }
+      } catch (e) {
+        console.warn('Failed to load particle positions', e);
+      } finally {
+        setLoaded(true);
+      }
+    };
+
+    loadPositions();
+  }, [persistenceKey, count]);
+
+  if (!loaded) return null; // Prevent flash
+
   return (
     <View style={StyleSheet.absoluteFill} pointerEvents="none">
-      {Array.from({ length: count }).map((_, i) => (
-        <Particle key={i} index={i} />
+      {positions.map((pos, i) => (
+        <Particle 
+          key={i} 
+          index={i} 
+          initialX={pos.x} 
+          initialY={pos.y} 
+        />
       ))}
     </View>
   );
 }
 
-function Particle({ index }: { index: number }) {
+function Particle({ index, initialX, initialY }: { index: number; initialX?: number; initialY?: number }) {
   const translateY = useSharedValue(0);
   const translateX = useSharedValue(0);
   const opacity = useSharedValue(0);
@@ -352,8 +443,9 @@ function Particle({ index }: { index: number }) {
     opacity: opacity.value,
   }));
 
-  const left = 20 + (index * (SCREEN_W - 40)) / 6;
-  const top = 200 + Math.random() * 200;
+  // Use props if available, otherwise fallback (though now parent handles it mostly)
+  const left = initialX ?? (20 + (index * (SCREEN_W - 40)) / 6);
+  const top = initialY ?? (200 + Math.random() * 200);
   const size = 4 + Math.random() * 4;
   const particleColors = [Colors.primary, Colors.mint, Colors.secondary, Colors.accent];
 
@@ -400,11 +492,13 @@ interface FeatureButtonProps {
   onPress?: () => void;
 }
 
+// FeatureButton
 export function FeatureButton({ title, icon, color, onPress }: FeatureButtonProps) {
   return (
     <Pressable
       onPress={() => {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        SoundService.play('click');
         onPress && onPress();
       }}
       style={styles.featureBtn}
@@ -503,6 +597,67 @@ export function WeeklyChart({ data, height = 120 }: WeeklyChartProps) {
         ))}
       </View>
     </View>
+  );
+}
+
+// ============================================================
+// AMBIENT SOUND BUTTON (Kawaii)
+// ============================================================
+export function AmbientButton() {
+  const [mode, setMode] = useState< 'off' | 'rain' | 'ocean' | 'fire' | 'birds' >('off');
+  
+  const handlePress = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    SoundService.play('click');
+
+    setMode((prev) => {
+      let next: typeof mode = 'off';
+      if (prev === 'off') next = 'rain';
+      else if (prev === 'rain') next = 'ocean';
+      else if (prev === 'ocean') next = 'fire';
+      else if (prev === 'fire') next = 'birds';
+      else next = 'off';
+
+      if (next === 'off') SoundService.stopAmbient();
+      else SoundService.playAmbient(next);
+      
+      return next;
+    });
+  };
+
+  const config = {
+    off: { icon: 'musical-notes-outline', color: Colors.textLight, label: 'Sonidos' },
+    rain: { icon: 'rainy', color: '#60A5FA', label: 'Lluvia' },
+    ocean: { icon: 'water', color: '#3B82F6', label: 'Océano' },
+    fire: { icon: 'flame', color: '#F97316', label: 'Fuego' },
+    birds: { icon: 'leaf', color: '#10B981', label: 'Aves' },
+  };
+
+  const current = config[mode];
+
+  return (
+    <Pressable onPress={handlePress} style={styles.ambientBtn}>
+      <Animated.View 
+        style={[
+          styles.ambientIconWrap, 
+          { backgroundColor: mode === 'off' ? 'rgba(0,0,0,0.05)' : current.color + '20' }
+        ]}
+        entering={FadeIn}
+        key={mode} // Re-animate on change
+      >
+        <Ionicons name={current.icon as any} size={20} color={mode === 'off' ? Colors.textLight : current.color} />
+      </Animated.View>
+      <Animated.Text 
+        style={[
+          styles.ambientLabel, 
+          { color: mode === 'off' ? Colors.textLight : current.color }
+        ]}
+        key={mode + 'text'}
+        entering={FadeIn.duration(300)}
+      >
+        {current.label}
+      </Animated.Text>
+    </Pressable>
   );
 }
 
@@ -720,5 +875,18 @@ const styles = StyleSheet.create({
   chartBarLabel: {
     fontSize: 11, color: Colors.textLight,
     fontFamily: 'Poppins_500Medium',
+  },
+
+  // Ambient Button
+  ambientBtn: {
+    alignItems: 'center', gap: 6, marginVertical: 12,
+  },
+  ambientIconWrap: {
+    width: 48, height: 48, borderRadius: 24,
+    justifyContent: 'center', alignItems: 'center',
+    borderWidth: 1, borderColor: 'rgba(0,0,0,0.05)',
+  },
+  ambientLabel: {
+    fontSize: 11, fontWeight: '600', fontFamily: 'Poppins_600SemiBold',
   },
 });

@@ -2,9 +2,7 @@ import React from 'react';
 import { Tabs } from 'expo-router';
 import { View, StyleSheet, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors, Gradients } from '../../constants/theme';
-import { AuroraBackground } from '../../components/ui';
-import { LinearGradient } from 'expo-linear-gradient';
+import { Colors } from '../../constants/theme';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -15,117 +13,136 @@ function TabIcon({ name, color, focused, size }: {
   name: string; color: string; focused: boolean; size: number;
 }) {
   const scale = useSharedValue(focused ? 1.18 : 1);
-  scale.value = withSpring(focused ? 1.18 : 1, { damping: 14, stiffness: 140 });
+  const translateY = useSharedValue(focused ? -2 : 0);
+
+  React.useEffect(() => {
+    scale.value = withSpring(focused ? 1.2 : 1, { damping: 12 });
+    translateY.value = withSpring(focused ? -4 : 0, { damping: 12 });
+  }, [focused]);
 
   const animStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value }],
+    transform: [{ scale: scale.value }, { translateY: translateY.value }],
+  }));
+
+  const indicatorStyle = useAnimatedStyle(() => ({
+    opacity: withSpring(focused ? 1 : 0),
+    transform: [{ scale: withSpring(focused ? 1 : 0) }],
   }));
 
   return (
-    <Animated.View style={[styles.tabIconWrap, animStyle]}>
-      <Ionicons name={name as any} size={size || 22} color={color} />
-      {focused && <View style={[styles.tabDot, { backgroundColor: color }]} />}
-    </Animated.View>
+    <View style={styles.iconContainer}>
+      <Animated.View style={[styles.tabIconWrap, animStyle]}>
+        <Ionicons name={name as any} size={size || 24} color={color} />
+      </Animated.View>
+      <Animated.View style={[styles.activeDot, { backgroundColor: color }, indicatorStyle]} />
+    </View>
   );
 }
 
 export default function TabsLayout() {
   return (
-    <View style={{ flex: 1 }}>
-      <Tabs
-        // @ts-ignore
-        sceneContainerStyle={{ backgroundColor: 'transparent' }}
-        screenOptions={{
-          headerShown: false,
-          tabBarActiveTintColor: Colors.primary,
-          tabBarInactiveTintColor: Colors.textLight,
-          tabBarStyle: styles.tabBar,
-          tabBarLabelStyle: styles.tabLabel,
-          tabBarItemStyle: { paddingVertical: 4 },
-          // @ts-ignore
-          sceneContainerStyle: { backgroundColor: 'transparent' },
-        }}
-      >
+    <Tabs
+      screenOptions={{
+        headerShown: false,
+        tabBarActiveTintColor: Colors.primary,
+        tabBarInactiveTintColor: Colors.textLight,
+        tabBarStyle: {
+          position: 'absolute',
+          bottom: 24, // Floating from bottom
+          left: 24,
+          right: 24,
+          height: 72,
+          borderRadius: 40,
+          backgroundColor: 'transparent',
+          borderTopWidth: 0,
+          ...styles.shadow,
+        },
+        tabBarBackground: () => (
+          <View style={{
+            flex: 1,
+            borderRadius: 40,
+            overflow: 'hidden',
+            backgroundColor: 'rgba(255,255,255,0.95)', // Almost solid white
+            ...styles.shadow, // Add shadow directly to bg if needed, or rely on container
+          }} />
+        ),
+        tabBarShowLabel: false,
+        tabBarItemStyle: {
+          height: 72,
+          justifyContent: 'center',
+          alignItems: 'center',
+          paddingVertical: 0,
+          paddingTop: 12, // User feedback: icons were "too high". Pushing down.
+        },
+      }}
+    >
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Inicio',
-          tabBarIcon: ({ color, focused, size }) => (
-            <TabIcon name={focused ? 'home' : 'home-outline'} color={color} focused={focused} size={size} />
+          tabBarIcon: ({ color, focused }) => (
+            <TabIcon name={focused ? 'home' : 'home-outline'} color={color} focused={focused} size={28} />
           ),
         }}
       />
       <Tabs.Screen
         name="actividades"
         options={{
-          title: 'Actividades',
-          tabBarIcon: ({ color, focused, size }) => (
-            <TabIcon name={focused ? 'sparkles' : 'sparkles-outline'} color={color} focused={focused} size={size} />
+          tabBarIcon: ({ color, focused }) => (
+            <TabIcon name={focused ? 'sparkles' : 'sparkles-outline'} color={color} focused={focused} size={28} />
           ),
         }}
       />
       <Tabs.Screen
         name="chat"
         options={{
-          title: 'Chat',
-          tabBarIcon: ({ color, focused, size }) => (
-            <TabIcon name={focused ? 'chatbubbles' : 'chatbubbles-outline'} color={color} focused={focused} size={size} />
+          tabBarIcon: ({ color, focused }) => (
+            <TabIcon name={focused ? 'chatbubbles' : 'chatbubbles-outline'} color={color} focused={focused} size={28} />
           ),
         }}
       />
       <Tabs.Screen
         name="registro"
         options={{
-          title: 'Registro',
-          tabBarIcon: ({ color, focused, size }) => (
-            <TabIcon name={focused ? 'journal' : 'journal-outline'} color={color} focused={focused} size={size} />
+          tabBarIcon: ({ color, focused }) => (
+            <TabIcon name={focused ? 'journal' : 'journal-outline'} color={color} focused={focused} size={28} />
           ),
         }}
       />
       <Tabs.Screen
         name="perfil"
         options={{
-          title: 'Perfil',
-          tabBarIcon: ({ color, focused, size }) => (
-            <TabIcon name={focused ? 'person' : 'person-outline'} color={color} focused={focused} size={size} />
+          tabBarIcon: ({ color, focused }) => (
+            <TabIcon name={focused ? 'person' : 'person-outline'} color={color} focused={focused} size={28} />
           ),
         }}
       />
     </Tabs>
-    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  tabBar: {
-    position: 'absolute',
-    backgroundColor: 'rgba(255, 255, 255, 0.96)',
-    borderTopWidth: 0,
-    height: Platform.OS === 'ios' ? 90 : 68,
-    paddingBottom: Platform.OS === 'ios' ? 28 : 8,
-    paddingTop: 8,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -3 },
-    shadowOpacity: 0.06,
+  shadow: {
+    shadowColor: '#5B9BD5',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.15,
     shadowRadius: 12,
     elevation: 8,
   },
-  tabLabel: {
-    fontSize: 10,
-    fontFamily: 'Poppins_600SemiBold',
-    marginTop: 1,
+  iconContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: '100%',
+    width: 50,
   },
   tabIconWrap: {
     alignItems: 'center',
     justifyContent: 'center',
   },
-  tabDot: {
-    width: 4,
-    height: 4,
-    borderRadius: 2,
+  activeDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
     position: 'absolute',
-    bottom: -6,
+    bottom: -10, // Adjusted for larger size
   },
 });

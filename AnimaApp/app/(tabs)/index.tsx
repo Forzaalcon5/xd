@@ -7,7 +7,7 @@ import { useRouter } from 'expo-router';
 import { Colors, Gradients, MoodConfig, DAILY_AFFIRMATIONS } from '../../constants/theme';
 import {
   GlassCard, MoodButton, JewelButton,
-  Mascot, SectionHeader, FeatureButton, FloatingParticles,
+  Mascot, SectionHeader, FeatureButton, FloatingParticles, AmbientButton,
 } from '../../components/ui';
 import { ScreenWrapper } from '../../components/ScreenWrapper';
 import { useStore, MoodType } from '../../store/useStore';
@@ -47,14 +47,19 @@ export default function HomeScreen() {
       >
         {/* Header with greeting (RF-17) */}
         <Animated.View entering={FadeInUp.duration(400)} style={styles.header}>
-          <View>
-            <Text style={styles.greeting}>{greeting}, {userName || 'amigo/a'} 👋</Text>
+          <View style={{ flex: 1, paddingRight: 16 }}>
+            <Text style={styles.greeting} numberOfLines={1} adjustsFontSizeToFit>
+              {greeting}, {userName || 'amigo/a'} 👋
+            </Text>
             <Text style={styles.subtitle}>¿En qué quieres trabajar hoy?</Text>
           </View>
-          <Pressable style={styles.notifBtn}>
-            <View style={styles.notifDot} />
-            <Ionicons name="notifications-outline" size={22} color={Colors.textPrimary} />
-          </Pressable>
+          <View style={{ alignItems: 'center', gap: 4 }}>
+            <Pressable style={styles.notifBtn}>
+              <View style={styles.notifDot} />
+              <Ionicons name="notifications-outline" size={22} color={Colors.textPrimary} />
+            </Pressable>
+            <AmbientButton />
+          </View>
         </Animated.View>
 
         {/* Mascot (RF-19) */}

@@ -9,10 +9,12 @@ import Animated, {
   FadeInUp,
 } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
+import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Gradients, Shadows } from '../../constants/theme';
 import { AuroraBackground } from '../../components/ui';
+import { SoundService } from '../../utils/SoundService';
 
 const mascotImage = require('../../assets/images/mascot/respirando.png');
 
@@ -35,22 +37,27 @@ export default function RespiracionScreen() {
 
     const phase = PHASES[phaseIndex];
 
-    if (phaseIndex === 0) {
-      // Inhale — expand
+    // Haptic & Sound feedback for phase start
+    if (phaseIndex === 0) { // Inhale
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      SoundService.play('breathe_in');
       mascotScale.value = withTiming(1.1, { duration: phase.duration, easing: Easing.inOut(Easing.ease) });
       mascotOpacity.value = withTiming(1, { duration: phase.duration });
       ringScale.value = withTiming(1.3, { duration: phase.duration, easing: Easing.inOut(Easing.ease) });
-    } else if (phaseIndex === 2) {
-      // Exhale — contract
+    } else if (phaseIndex === 2) { // Exhale
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      SoundService.play('breathe_out');
       mascotScale.value = withTiming(0.85, { duration: phase.duration, easing: Easing.inOut(Easing.ease) });
       mascotOpacity.value = withTiming(0.6, { duration: phase.duration });
       ringScale.value = withTiming(1, { duration: phase.duration, easing: Easing.inOut(Easing.ease) });
+    } else { // Hold
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     }
 
     const timer = setTimeout(() => {
       setPhaseIndex((prev) => (prev + 1) % PHASES.length);
     }, phase.duration);
-
+    
     return () => clearTimeout(timer);
   }, [isActive, phaseIndex]);
 
@@ -125,7 +132,7 @@ export default function RespiracionScreen() {
 
       {/* Start/Stop Button */}
       <Animated.View entering={FadeInUp.duration(400).delay(200)} style={styles.controls}>
-        <Pressable onPress={toggleExercise} style={styles.controlBtn}>
+        <Pressable onPress={() => { SoundService.play('click'); toggleExercise(); }} style={styles.controlBtn}>
           <LinearGradient
             colors={isActive ? ['#E53E3E', '#C53030'] : [...Gradients.jewel]}
             style={styles.controlGradient}

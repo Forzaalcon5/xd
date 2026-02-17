@@ -193,9 +193,12 @@ const styles = StyleSheet.create({
   inputBar: {
     flexDirection: 'row', alignItems: 'flex-end', gap: 10,
     paddingHorizontal: 16, paddingVertical: 12,
-    paddingBottom: Platform.OS === 'ios' ? 32 : 12,
-    backgroundColor: 'rgba(255,255,255,0.9)',
+    // Lift above floating tab bar (bottom: 24, height: 72 -> ~100px)
+    marginBottom: Platform.OS === 'ios' ? 120 : 100,
+    backgroundColor: 'rgba(255,255,255,0.85)',
     borderTopWidth: 1, borderTopColor: 'rgba(0,0,0,0.04)',
+    borderRadius: 24, // Make it floating too
+    marginHorizontal: 16, // Inset from sides
   },
   input: {
     flex: 1, minHeight: 40, maxHeight: 100,
