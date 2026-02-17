@@ -1,25 +1,30 @@
 import React, { useEffect } from 'react';
-import { View, StyleSheet, Dimensions } from 'react-native';
+import { View, StyleSheet, Dimensions, Platform } from 'react-native';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withRepeat,
   withTiming,
   withSequence,
-  withDelay, // ADDED
+  withDelay,
   Easing,
   interpolate,
+  useAnimatedSensor,
+  SensorType,
+  withSpring,
 } from 'react-native-reanimated';
 import { Colors } from '../constants/theme';
+import { CURRENT_CONFIG } from '../utils/devicePerformance'; // ADDED
 
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
 
 // LUNAR MODE CONFIG (Sutil, Atmospheric, Relaxing)
 // "Aurora emocional nocturna"
-const BLOB_OPACITY = 0.12; // Slightly higher than 5% to be visible against dark bg
-const DURATION_BASE = 25000; // 25s cycle for ultra slow movement
+const BLOB_OPACITY = 0.12; 
+const DURATION_BASE = 25000; 
 
-const STAR_COUNT = 40; // Increased density
+// OPTIMIZATION: Use smart detection
+const STAR_COUNT = CURRENT_CONFIG.starCount;
 
 // SHOOTING STAR COMPONENT
 const ShootingStar = React.memo(() => {
@@ -95,9 +100,9 @@ const Star = React.memo(({ delay, size, top, left }: { delay: number; size: numb
       delay,
       withRepeat(
         withSequence(
-          withTiming(0.4, { duration: 2000, easing: Easing.inOut(Easing.quad) }), // Fade in
-          withTiming(0.1, { duration: 2500, easing: Easing.inOut(Easing.quad) }), // Fade out (twinkle)
-          withTiming(0.5, { duration: 3000, easing: Easing.inOut(Easing.quad) }), // Back up
+          withTiming(0.8, { duration: 2000, easing: Easing.inOut(Easing.quad) }), // Fade in brighter
+          withTiming(0.2, { duration: 2500, easing: Easing.inOut(Easing.quad) }), // Fade out (twinkle)
+          withTiming(0.9, { duration: 3000, easing: Easing.inOut(Easing.quad) }), // Back up brighter
           withTiming(0, { duration: 2000, easing: Easing.inOut(Easing.quad) })   // Fade out complete
         ),
         -1,
@@ -135,6 +140,17 @@ export const AuroraBackgroundDark = React.memo(function AuroraBackgroundDark() {
   const blob2Anim = useSharedValue(0); 
   const blob3Anim = useSharedValue(0); 
   
+  // PARALLAX SENSOR
+  // Only enable if high performance config allows it (or just always for now as it's optimized)
+  const sensor = useAnimatedSensor(SensorType.GYROSCOPE, { interval: 50 });
+
+  const starsAnimatedStyle = useAnimatedStyle(() => {
+    const { x, y } = sensor.sensor.value;
+    const transX = withSpring(y * 25, { damping: 20, stiffness: 100 }); 
+    const transY = withSpring(x * 25, { damping: 20, stiffness: 100 });
+    return { transform: [{ translateX: transX }, { translateY: transY }] };
+  });
+
   // Generate random stars once
   const stars = React.useMemo(() => {
     return Array.from({ length: STAR_COUNT }).map((_, i) => ({
@@ -200,10 +216,12 @@ export const AuroraBackgroundDark = React.memo(function AuroraBackgroundDark() {
 
   return (
     <View style={StyleSheet.absoluteFill} pointerEvents="none">
-       {/* Stars Layer - Fixed in background but twinkling */}
-       {stars.map((star) => (
-        <Star key={star.id} {...star} />
-      ))}
+       {/* Stars Layer - Animated container for parallax */}
+       <Animated.View style={[StyleSheet.absoluteFill, starsAnimatedStyle]}>
+         {stars.map((star) => (
+          <Star key={star.id} {...star} />
+        ))}
+       </Animated.View>
       
       {/* Shooting Star - Occasional */}
       <ShootingStar />

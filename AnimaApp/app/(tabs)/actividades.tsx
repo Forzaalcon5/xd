@@ -15,7 +15,7 @@ export default function ActividadesScreen() {
   const handleActivityPress = (activity: typeof activities[0]) => {
     if (activity.title.toLowerCase().includes('respiración')) {
       router.push('/actividades/respiracion');
-    } else if (activity.title.toLowerCase().includes('gratitud')) {
+    } else if (activity.title.toLowerCase().includes('estelar')) {
       router.push('/actividades/gratitud');
     } else if (activity.title.toLowerCase().includes('relajación')) {
       router.push('/actividades/relajacion');

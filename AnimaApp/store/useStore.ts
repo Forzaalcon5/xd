@@ -86,7 +86,7 @@ const BOT_RESPONSES: Record<string, string[]> = {
   ],
   triste: [
     'Lamento que te sientas triste. Recuerda que está bien sentirse así. 💙',
-    'La tristeza es una emoción válida. ¿Qué tal si escribimos en tu diario de gratitud?',
+    'La tristeza es una emoción válida. ¿Qué tal si escribimos en tu Diario Estelar?',
   ],
   bien: [
     '¡Me alegra saber eso! 😊 ¿Qué te ha hecho sentir bien hoy?',
@@ -148,7 +148,7 @@ export const useStore = create<AppState>()(
       // Activities
       activities: [
         { id: '1', title: 'Respiración Guiada', description: 'Respira y relaja tu mente.', icon: 'water-outline', color: '#87CEEB', gradient: ['#89F7FE', '#66A6FF'], duration: '5 min' },
-        { id: '2', title: 'Diario de Gratitud', description: 'Escribe cosas positivas del día.', icon: 'journal-outline', color: '#FFD93D', gradient: ['#FFD200', '#F7971E'], duration: '10 min' },
+        { id: '2', title: 'Diario Estelar', description: 'Escribe cosas positivas del día.', icon: 'journal-outline', color: '#FFD93D', gradient: ['#FFD200', '#F7971E'], duration: '10 min' },
         { id: '3', title: 'Relajación Progresiva', description: 'Libera la tensión de tu cuerpo.', icon: 'leaf-outline', color: '#C4B7EB', gradient: ['#E0C3FC', '#8EC5FC'], duration: '8 min' },
         { id: '4', title: 'Meditación Breve', description: 'Encuentra calma en minutos.', icon: 'sparkles-outline', color: '#A8E6CF', gradient: ['#D4FC79', '#96E6A1'], duration: '5 min' },
       ],

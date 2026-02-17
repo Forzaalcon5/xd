@@ -9,6 +9,7 @@ import { GlassCard, SectionHeader, Mascot, JewelButton } from '../../components/
 import { ScreenWrapper } from '../../components/ScreenWrapper';
 import { useStore, MoodType } from '../../store/useStore';
 import { useTheme } from '../../hooks/useTheme';
+import { SoundService } from '../../utils/SoundService'; 
 
 export default function PerfilScreen() {
   const router = useRouter();
@@ -26,7 +27,8 @@ export default function PerfilScreen() {
       { text: 'Cancelar', style: 'cancel' },
       {
         text: 'Salir', style: 'destructive',
-        onPress: () => {
+        onPress: async () => {
+          await SoundService.unloadAll(); 
           logout();
           router.replace('/(auth)/login');
         },
@@ -35,7 +37,7 @@ export default function PerfilScreen() {
   };
 
   const openEditModal = () => {
-    setNewName(userName);
+    setNewName(userName || '');
     setIsEditing(true);
   };
 
@@ -85,8 +87,8 @@ export default function PerfilScreen() {
           </View>
           
           <View style={{ gap: 4, alignItems: 'center' }}>
-            <Text style={[styles.userName, isDark && { color: Colors.dreamText }]}>{userName || 'Usuario'}</Text>
-            <Text style={[styles.userEmail, isDark && { color: Colors.dreamText, opacity: 0.7 }]}>{userEmail || 'email@example.com'}</Text>
+            <Text style={[styles.userName, { color: colors.textPrimary }]}>{userName || 'Usuario'}</Text>
+            <Text style={[styles.userEmail, { color: colors.textSecondary }]}>{userEmail || 'email@example.com'}</Text>
           </View>
 
           <Pressable style={styles.editProfileBtn} onPress={openEditModal}>
@@ -111,7 +113,7 @@ export default function PerfilScreen() {
                 <View style={[styles.settingsIconWrap, { backgroundColor: item.color + '10' }]}>
                   <Ionicons name={item.icon as any} size={20} color={item.color} />
                 </View>
-                <Text style={[styles.settingsLabel, isDark && { color: Colors.dreamText }]}>{item.label}</Text>
+                <Text style={[styles.settingsLabel, { color: colors.textPrimary }]}>{item.label}</Text>
                 
                 {item.type === 'toggle' ? (
                    <View style={[styles.toggleTrack, { 
@@ -184,6 +186,7 @@ export default function PerfilScreen() {
                 onChangeText={setNewName}
                 placeholder="Tu nombre"
                 autoFocus
+                placeholderTextColor={Colors.textLight}
               />
             </View>
 

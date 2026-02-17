@@ -721,19 +721,20 @@ export function AmbientButton() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     SoundService.play('click');
 
-    setMode((prev) => {
-      let next: typeof mode = 'off';
-      if (prev === 'off') next = 'rain';
-      else if (prev === 'rain') next = 'ocean';
-      else if (prev === 'ocean') next = 'fire';
-      else if (prev === 'fire') next = 'birds';
-      else next = 'off';
+    // Calculate next mode based on current mode
+    let next: typeof mode = 'off';
+    if (mode === 'off') next = 'rain';
+    else if (mode === 'rain') next = 'ocean';
+    else if (mode === 'ocean') next = 'fire';
+    else if (mode === 'fire') next = 'birds';
+    else next = 'off';
 
-      if (next === 'off') SoundService.stopAmbient();
-      else SoundService.playAmbient(next);
-      
-      return next;
-    });
+    // Update State
+    setMode(next);
+
+    // Call Service (Logic is now robust inside Service)
+    if (next === 'off') SoundService.stopAmbient();
+    else SoundService.playAmbient(next);
   };
 
   const config = {

@@ -56,9 +56,9 @@ export const ColorsDark = {
   bgCardSolid: '#2C2847',    // Same as bgCard
 
   // Text - "Tinted white"
-  textPrimary: '#F2EFFF',    // Lavender White
-  textSecondary: '#C4B7EB',  // Muted Lavender
-  textLight: '#7E7696',      // Darker muted purple
+  textPrimary: '#FFFFFF',    // Pure White for max contrast
+  textSecondary: '#E2E8F0',  // Very light gray/lavender
+  textLight: '#A0AEC0',      // Light gray for captions
   textOnPrimary: '#151221',  // Dark text on bright buttons for contrast
 
   // Semantic

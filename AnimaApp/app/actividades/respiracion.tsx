@@ -15,6 +15,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { Colors, Gradients, Shadows } from '../../constants/theme';
 import { AuroraBackground } from '../../components/ui';
 import { SoundService } from '../../utils/SoundService';
+import { ScreenWrapper } from '../../components/ScreenWrapper'; // ADDED
+import { useTheme } from '../../hooks/useTheme'; // ADDED
 
 const mascotImage = require('../../assets/images/mascot/respirando.png');
 
@@ -26,6 +28,7 @@ const PHASES = [
 ];
 
 export default function RespiracionScreen() {
+  const { colors, isDark } = useTheme(); // NEW
   const [isActive, setIsActive] = useState(false);
   const [phaseIndex, setPhaseIndex] = useState(0);
   const mascotScale = useSharedValue(0.85);
@@ -86,24 +89,27 @@ export default function RespiracionScreen() {
   const currentPhase = PHASES[phaseIndex];
 
   return (
-    <View style={styles.container}>
-      <LinearGradient colors={[...Gradients.primary]} style={StyleSheet.absoluteFill} />
-      <AuroraBackground />
-
+    <ScreenWrapper style={styles.container}>
       {/* Header */}
       <Animated.View entering={FadeInDown.duration(400)} style={styles.header}>
         <Pressable onPress={() => router.back()} style={styles.backBtn}>
-          <View style={styles.backBtnInner}>
-            <Ionicons name="arrow-back" size={20} color={Colors.textPrimary} />
+          <View style={[
+            styles.backBtnInner,
+            { 
+              backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(255, 255, 255, 0.9)',
+              borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0, 0, 0, 0.05)'
+            }
+          ]}>
+            <Ionicons name="arrow-back" size={20} color={colors.textPrimary} />
           </View>
         </Pressable>
-        <Text style={styles.title}>Respiración Guiada</Text>
+        <Text style={[styles.title, { color: colors.textPrimary }]}>Respiración Guiada</Text>
         <View style={{ width: 40 }} />
       </Animated.View>
 
       {/* Instruction Text */}
       <Animated.View entering={FadeInDown.duration(400).delay(100)} style={styles.instructionWrap}>
-        <Text style={styles.instructionText}>
+        <Text style={[styles.instructionText, { color: colors.textSecondary }]}>
           Respira junto a Aníma. Sigue el ritmo visual para relajarte. 🍃
         </Text>
       </Animated.View>
@@ -111,8 +117,16 @@ export default function RespiracionScreen() {
       {/* Mascot Breathing Circle */}
       <View style={styles.circleContainer}>
         {/* Outer ring that expands/contracts */}
-        <Animated.View style={[styles.outerRing, { borderColor: currentPhase.color + '30' }, ringAnimStyle]} />
-        <Animated.View style={[styles.middleRing, { borderColor: currentPhase.color + '18' }, ringAnimStyle]} />
+        <Animated.View style={[
+          styles.outerRing, 
+          { borderColor: currentPhase.color + (isDark ? '50' : '30') }, 
+          ringAnimStyle
+        ]} />
+        <Animated.View style={[
+          styles.middleRing, 
+          { borderColor: currentPhase.color + (isDark ? '30' : '18') }, 
+          ringAnimStyle
+        ]} />
 
         {/* Mascot that breathes */}
         <Animated.View style={[styles.mascotWrap, mascotAnimStyle]}>
@@ -121,9 +135,12 @@ export default function RespiracionScreen() {
 
         {/* Phase label below mascot — only when active */}
         {isActive && (
-          <View style={[styles.phaseChip, { backgroundColor: currentPhase.color + '20' }]}>  
-            <Ionicons name={currentPhase.icon as any} size={16} color={currentPhase.color} />
-            <Text style={[styles.phaseText, { color: currentPhase.color }]}>
+          <View style={[
+            styles.phaseChip, 
+            { backgroundColor: currentPhase.color + (isDark ? '30' : '20') }
+          ]}>  
+            <Ionicons name={currentPhase.icon as any} size={16} color={isDark ? '#FFF' : currentPhase.color} />
+            <Text style={[styles.phaseText, { color: isDark ? '#FFF' : currentPhase.color }]}>
               {currentPhase.label}
             </Text>
           </View>
@@ -145,7 +162,7 @@ export default function RespiracionScreen() {
       </Animated.View>
 
       <View style={{ height: 40 }} />
-    </View>
+    </ScreenWrapper>
   );
 }
 
@@ -157,18 +174,17 @@ const styles = StyleSheet.create({
   },
   backBtn: { width: 40, height: 40, justifyContent: 'center', alignItems: 'center' },
   backBtnInner: {
-    width: 36, height: 36, borderRadius: 12, backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    width: 36, height: 36, borderRadius: 12, 
     justifyContent: 'center', alignItems: 'center', borderWidth: 1,
-    borderColor: 'rgba(0, 0, 0, 0.05)',
   },
   title: {
-    fontSize: 18, fontWeight: '700', color: Colors.textPrimary, fontFamily: 'Poppins_700Bold',
+    fontSize: 18, fontWeight: '700', fontFamily: 'Poppins_700Bold',
   },
   instructionWrap: {
     paddingHorizontal: 40, marginBottom: 10,
   },
   instructionText: {
-    textAlign: 'center', fontSize: 14, color: Colors.textSecondary,
+    textAlign: 'center', fontSize: 14,
     fontFamily: 'Poppins_400Regular', lineHeight: 22,
   },
   circleContainer: {
