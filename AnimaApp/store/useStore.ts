@@ -25,6 +25,7 @@ export interface Activity {
   description: string;
   icon: string;
   color: string;
+  gradient?: [string, string];
   duration: string;
 }
 
@@ -61,6 +62,7 @@ interface AppState {
   
   // Actions
   login: (email: string, name: string) => void;
+  updateUser: (name: string) => void;
   logout: () => void;
   hideSplash: () => void;
   setMood: (mood: MoodType) => void;
@@ -145,10 +147,10 @@ export const useStore = create<AppState>()(
       
       // Activities
       activities: [
-        { id: '1', title: 'Respiración Guiada', description: 'Respira y relaja tu mente.', icon: 'water-outline', color: '#87CEEB', duration: '5 min' },
-        { id: '2', title: 'Diario de Gratitud', description: 'Escribe cosas positivas del día.', icon: 'journal-outline', color: '#FFD93D', duration: '10 min' },
-        { id: '3', title: 'Relajación Progresiva', description: 'Libera la tensión de tu cuerpo.', icon: 'leaf-outline', color: '#C4B7EB', duration: '8 min' },
-        { id: '4', title: 'Meditación Breve', description: 'Encuentra calma en minutos.', icon: 'sparkles-outline', color: '#A8E6CF', duration: '5 min' },
+        { id: '1', title: 'Respiración Guiada', description: 'Respira y relaja tu mente.', icon: 'water-outline', color: '#87CEEB', gradient: ['#89F7FE', '#66A6FF'], duration: '5 min' },
+        { id: '2', title: 'Diario de Gratitud', description: 'Escribe cosas positivas del día.', icon: 'journal-outline', color: '#FFD93D', gradient: ['#FFD200', '#F7971E'], duration: '10 min' },
+        { id: '3', title: 'Relajación Progresiva', description: 'Libera la tensión de tu cuerpo.', icon: 'leaf-outline', color: '#C4B7EB', gradient: ['#E0C3FC', '#8EC5FC'], duration: '8 min' },
+        { id: '4', title: 'Meditación Breve', description: 'Encuentra calma en minutos.', icon: 'sparkles-outline', color: '#A8E6CF', gradient: ['#D4FC79', '#96E6A1'], duration: '5 min' },
       ],
       recentActivities: [
         { title: 'Respiración Guiada', time: 'Hoy • 5 min', detail: 'Relajaste', icon: 'water-outline', color: '#87CEEB' },
@@ -156,6 +158,7 @@ export const useStore = create<AppState>()(
       
       // Actions
       login: (email, name) => set({ isAuthenticated: true, userEmail: email, userName: name || 'Usuario' }),
+      updateUser: (name) => set({ userName: name }),
       logout: () => {
         SoundService.stopAmbient();
         set({ isAuthenticated: false, userName: '', userEmail: '', messages: [] });
@@ -175,7 +178,21 @@ export const useStore = create<AppState>()(
           date: 'Hoy',
           label: labels[currentMood],
         };
-        set({ moodHistory: [newEntry, ...moodHistory], currentMood: null });
+
+        // Calculate score (1-5)
+        const scores: Record<MoodType, number> = {
+          animado: 5, mejor: 4, neutral: 3, triste: 2, muy_triste: 1,
+        };
+        const score = scores[currentMood];
+        
+        // Update weekly data: remove first, add new at end (FIFO for chart)
+        const newWeekly = [...get().weeklyMoodData.slice(1), score];
+
+        set({ 
+          moodHistory: [newEntry, ...moodHistory], 
+          currentMood: null,
+          weeklyMoodData: newWeekly,
+        });
       },
       sendMessage: (text) => {
         const { messages } = get();

@@ -1,25 +1,25 @@
 // Aníma App — Design System Tokens
 // Calming, premium palette based on mockups and RNF-07
 
-export const Colors = {
+export const ColorsLight = {
   // Core
-  primary: '#5B9BD5',      // Sky blue — buttons, accents
-  primaryLight: '#87CEEB',  // Light sky — highlights
-  secondary: '#9B8EC4',     // Lavender — secondary accents
-  accent: '#F7C97E',        // Warm gold — warm accent
-  peach: '#FFDAB9',         // Peach — emotional warmth
-  mint: '#A8E6CF',          // Mint — success, calm
+  primary: '#5B9BD5',      // Sky blue
+  primaryLight: '#87CEEB',  // Light sky
+  secondary: '#9B8EC4',     // Lavender
+  accent: '#F7C97E',        // Warm gold
+  peach: '#FFDAB9',         // Peach
+  mint: '#A8E6CF',          // Mint
 
   // Backgrounds
-  bgPrimary: '#E8F4FD',     // Very light blue — main bg
+  bgPrimary: '#E8F4FD',     // Very light blue
   bgSecondary: '#F0F6FF',   // Lighter blue
-  bgCard: 'rgba(255,255,255,0.85)',  // Glass card
+  bgCard: 'rgba(255,255,255,0.85)',
   bgCardSolid: '#FFFFFF',
 
   // Text
-  textPrimary: '#2D3748',   // Dark slate
-  textSecondary: '#4A5568', // Medium gray
-  textLight: '#A0AEC0',     // Light gray
+  textPrimary: '#2D3748',
+  textSecondary: '#4A5568',
+  textLight: '#A0AEC0',
   textOnPrimary: '#FFFFFF',
 
   // Semantic
@@ -34,7 +34,52 @@ export const Colors = {
   moodNeutral: '#FCD34D',
   moodTriste: '#C4B7EB',
   moodMuyTriste: '#FC8181',
+
+  // Specific
+  dreamText: '#2D3748', 
 };
+
+// 🌙 PREMIUM DARK MODE PALETTE (Modo Lunar)
+export const ColorsDark = {
+  // Core - Adjusted for dark mode luminance
+  primary: '#73AEE3',       // Slightly lighter/softer blue for contrast against dark
+  primaryLight: '#87CEEB',   
+  secondary: '#B5A8D9',      // Lighter lavender for glow
+  accent: '#E6C894',         // Desaturated gold/sand
+  peach: '#FFDAB9',          
+  mint: '#A8E6CF',           
+
+  // Backgrounds - "Noche suave emocional"
+  bgPrimary: '#1E1B2E',      // Deep Lavender-Blue
+  bgSecondary: '#232038',    // Slightly lighter night
+  bgCard: '#2C2847',         // SOLID Dark Lavender (No Glassmorphism as requested)
+  bgCardSolid: '#2C2847',    // Same as bgCard
+
+  // Text - "Tinted white"
+  textPrimary: '#F2EFFF',    // Lavender White
+  textSecondary: '#C4B7EB',  // Muted Lavender
+  textLight: '#7E7696',      // Darker muted purple
+  textOnPrimary: '#151221',  // Dark text on bright buttons for contrast
+
+  // Semantic
+  success: '#8BC4AB',        // Desaturated mint
+  warning: '#E5C065',        // Desaturated yellow
+  error: '#E57373',          // Softer red
+  info: '#73AEE3',
+
+  // Mood Colors - Adjusted luminosity
+  moodAnimado: '#8BC4AB',
+  moodMejor: '#73AEE3',
+  moodNeutral: '#E5C065',
+  moodTriste: '#9B8EC4',
+  moodMuyTriste: '#E57373',
+
+  // Specific
+  dreamText: '#F2EFFF',
+};
+
+// Default export
+export const Colors = ColorsLight;
 
 export const Gradients = {
   primary: ['#E8F4FD', '#F0F6FF', '#FFFFFF'] as const,
@@ -44,6 +89,14 @@ export const Gradients = {
   aurora: ['rgba(91,155,213,0.15)', 'rgba(155,142,196,0.08)', 'rgba(168,230,207,0.1)'] as const,
   loginBg: ['#E8F4FD', '#D5E8F7', '#C4DCF0'] as const,
   splash: ['#D5E8F7', '#E8F4FD', '#F0F6FF'] as const,
+  
+  // 🌙 Dark Dream Mode Gradients
+  // Deep Night: Dark Lavender -> Deep Space Blue -> Abyss
+  dreamNight: ['#232038', '#1E1B2E', '#151221'] as const, 
+  
+  // Dark Jewels
+  darkJewel: ['#5B9BD5', '#6B5B95'] as const, 
+  dreamOrb: ['#A78BFA', '#C8B6FF'] as const,
 };
 
 export const Shadows = {

@@ -7,6 +7,7 @@ import Animated, { FadeInUp, FadeIn } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Gradients } from '../../constants/theme';
+import { useTheme } from '../../hooks/useTheme';
 import { ChatBubble, TypingIndicator, GlassCard, Mascot } from '../../components/ui';
 import { ScreenWrapper } from '../../components/ScreenWrapper';
 import { useStore } from '../../store/useStore';
@@ -21,6 +22,7 @@ const QUICK_REPLIES = [
 ];
 
 export default function ChatScreen() {
+  const { colors, isDark } = useTheme(); // NEW
   const messages = useStore((s) => s.messages);
   const isTyping = useStore((s) => s.isTyping);
   const sendMessage = useStore((s) => s.sendMessage);
@@ -46,15 +48,15 @@ export default function ChatScreen() {
     <ScreenWrapper style={styles.container}>
 
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { borderBottomColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.04)' }]}>
         <View style={styles.headerAvatarWrap}>
           <Image source={mascotAvatar} style={styles.headerAvatar} resizeMode="contain" />
           {/* Online indicator dot */}
           <View style={styles.onlineDot} />
         </View>
         <View style={{ flex: 1 }}>
-          <Text style={styles.headerTitle}>Aníma</Text>
-          <Text style={styles.headerStatus}>
+          <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>Aníma</Text>
+          <Text style={[styles.headerStatus, { color: colors.textLight }]}>
             {isTyping ? 'Escribiendo...' : 'Tu compañero emocional'}
           </Text>
         </View>
@@ -76,8 +78,8 @@ export default function ChatScreen() {
           {messages.length === 0 && (
             <Animated.View entering={FadeIn.duration(600)} style={styles.welcomeSection}>
               <Mascot size={100} variant="empathetic" />
-              <Text style={styles.welcomeTitle}>¡Hola! Soy Aníma 💙</Text>
-              <Text style={styles.welcomeText}>
+              <Text style={[styles.welcomeTitle, { color: colors.textPrimary }]}>¡Hola! Soy Aníma 💙</Text>
+              <Text style={[styles.welcomeText, { color: colors.textSecondary }]}>
                 Estoy aquí para acompañarte. Puedes contarme cómo te sientes o elegir una opción rápida.
               </Text>
 
@@ -85,8 +87,17 @@ export default function ChatScreen() {
               <View style={styles.quickReplies}>
                 {QUICK_REPLIES.map((text, i) => (
                   <Animated.View key={i} entering={FadeInUp.delay(300 + i * 100).duration(300)}>
-                    <Pressable style={styles.quickChip} onPress={() => handleQuickReply(text)}>
-                      <Text style={styles.quickChipText}>{text}</Text>
+                    <Pressable 
+                      style={[
+                        styles.quickChip, 
+                        { 
+                          backgroundColor: isDark ? 'rgba(115,174,227,0.15)' : 'rgba(91,155,213,0.08)',
+                          borderColor: isDark ? 'rgba(115,174,227,0.2)' : 'rgba(91,155,213,0.15)'
+                        }
+                      ]} 
+                      onPress={() => handleQuickReply(text)}
+                    >
+                      <Text style={[styles.quickChipText, { color: colors.info }]}>{text}</Text>
                     </Pressable>
                   </Animated.View>
                 ))}
@@ -116,11 +127,23 @@ export default function ChatScreen() {
         </ScrollView>
 
         {/* Input Bar */}
-        <View style={styles.inputBar}>
+        <View style={[
+          styles.inputBar, 
+          { 
+            backgroundColor: colors.bgCard, // DYNAMIC
+            borderTopColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.04)' 
+          }
+        ]}>
           <TextInput
-            style={styles.input}
+            style={[
+              styles.input, 
+              { 
+                backgroundColor: isDark ? 'rgba(0,0,0,0.2)' : 'rgba(0,0,0,0.03)',
+                color: colors.textPrimary 
+              }
+            ]}
             placeholder="Escribe cómo te sientes..."
-            placeholderTextColor={Colors.textLight}
+            placeholderTextColor={colors.textLight}
             value={input}
             onChangeText={setInput}
             onSubmitEditing={handleSend}

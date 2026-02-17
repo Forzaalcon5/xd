@@ -7,7 +7,7 @@ import { useRouter } from 'expo-router';
 import { Colors, Gradients, MoodConfig, DAILY_AFFIRMATIONS } from '../../constants/theme';
 import {
   GlassCard, MoodButton, JewelButton,
-  Mascot, SectionHeader, FeatureButton, FloatingParticles, AmbientButton,
+  Mascot, SectionHeader, FeatureButton, FloatingParticles, AmbientButton, WeeklyProgressRing,
 } from '../../components/ui';
 import { ScreenWrapper } from '../../components/ScreenWrapper';
 import { useStore, MoodType } from '../../store/useStore';
@@ -19,6 +19,7 @@ export default function HomeScreen() {
   const setMood = useStore((s) => s.setMood);
   const saveMoodEntry = useStore((s) => s.saveMoodEntry);
   const recentActivities = useStore((s) => s.recentActivities);
+  const weeklyMoodData = useStore((s) => s.weeklyMoodData);
 
   // RF-17: Dynamic greeting based on time of day
   const greeting = useMemo(() => {
@@ -127,7 +128,18 @@ export default function HomeScreen() {
           )}
         </Animated.View>
 
-        <View style={{ height: 120 }} />
+        {/* Weekly Wellness Ring (RF-18) */}
+        <Animated.View entering={FadeInUp.duration(400).delay(600)}>
+          <SectionHeader title="Bienestar Semanal" />
+          <GlassCard style={{ alignItems: 'center', paddingVertical: 20 }}>
+             <WeeklyProgressRing data={weeklyMoodData} />
+             <Text style={{ textAlign: 'center', marginTop: 12, color: Colors.textLight, fontSize: 13, maxWidth: 200 }}>
+               Tu balance emocional de los últimos 7 días.
+             </Text>
+          </GlassCard>
+        </Animated.View>
+        
+        <View style={{ height: 100 }} />
       </ScrollView>
     </ScreenWrapper>
   );

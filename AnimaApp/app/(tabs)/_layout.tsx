@@ -3,6 +3,7 @@ import { Tabs } from 'expo-router';
 import { View, StyleSheet, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../../constants/theme';
+import { useTheme } from '../../hooks/useTheme';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -40,12 +41,14 @@ function TabIcon({ name, color, focused, size }: {
 }
 
 export default function TabsLayout() {
+  const { colors, isDark } = useTheme(); // NEW
+
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: Colors.primary,
-        tabBarInactiveTintColor: Colors.textLight,
+        tabBarActiveTintColor: isDark ? Colors.primary : Colors.primary, // Keep primary or adjust for dark
+        tabBarInactiveTintColor: isDark ? colors.textLight : Colors.textLight,
         tabBarStyle: {
           position: 'absolute',
           bottom: 24, // Floating from bottom
@@ -62,8 +65,9 @@ export default function TabsLayout() {
             flex: 1,
             borderRadius: 40,
             overflow: 'hidden',
-            backgroundColor: 'rgba(255,255,255,0.95)', // Almost solid white
-            ...styles.shadow, // Add shadow directly to bg if needed, or rely on container
+            // DYNAMIC BACKGROUND: Use bgCard (which is now solid #2C2847 in dark mode)
+            backgroundColor: colors.bgCard, 
+            ...styles.shadow, 
           }} />
         ),
         tabBarShowLabel: false,
@@ -72,7 +76,7 @@ export default function TabsLayout() {
           justifyContent: 'center',
           alignItems: 'center',
           paddingVertical: 0,
-          paddingTop: 12, // User feedback: icons were "too high". Pushing down.
+          paddingTop: 12, 
         },
       }}
     >

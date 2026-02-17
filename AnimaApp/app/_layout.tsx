@@ -11,7 +11,9 @@ import { useStore } from '../store/useStore';
 // Prevent native splash from auto-hiding (font loading)
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
-export default function RootLayout() {
+import { ThemeProvider } from '../context/ThemeContext';
+
+function AppLayout() {
   const [showSplash, setShowSplash] = useState(true);
   const isAuthenticated = useStore((s) => s.isAuthenticated);
 
@@ -74,5 +76,13 @@ export default function RootLayout() {
         <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
       </Stack>
     </GestureHandlerRootView>
+  );
+}
+
+export default function RootLayout() {
+  return (
+    <ThemeProvider>
+      <AppLayout />
+    </ThemeProvider>
   );
 }

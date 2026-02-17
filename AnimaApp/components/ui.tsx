@@ -6,11 +6,13 @@ import {
 import Animated, {
   useSharedValue, useAnimatedStyle, withRepeat, withTiming,
   withSpring, withSequence, withDelay, Easing, FadeIn, FadeInUp,
-  interpolate, interpolateColor, useAnimatedSensor, SensorType,
+  interpolate, interpolateColor, useAnimatedSensor, SensorType, useAnimatedProps,
 } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
+import Svg, { Circle, G } from 'react-native-svg'; // Added for Progress Ring
 import { Colors, Shadows, BorderRadius, Gradients, Typography, MoodConfig, MoodType } from '../constants/theme';
+import { useTheme } from '../hooks/useTheme';
 
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
 
@@ -36,6 +38,7 @@ import * as Haptics from 'expo-haptics';
 // AURORA ANIMATED BACKGROUND  (RF-22)
 // ============================================================
 export const AuroraBackground = React.memo(function AuroraBackground() {
+  const { isDark } = useTheme();
   const sensor = useAnimatedSensor(SensorType.GYROSCOPE, { interval: 100 });
   const blob1Anim = useSharedValue(0);
   const blob2Anim = useSharedValue(0);
@@ -99,10 +102,12 @@ export const AuroraBackground = React.memo(function AuroraBackground() {
 
   return (
     <View style={StyleSheet.absoluteFill} pointerEvents="none">
-      <Animated.View style={[styles.auroraBlob, styles.blob1, style1]} />
-      <Animated.View style={[styles.auroraBlob, styles.blob2, style2]} />
-      <Animated.View style={[styles.auroraBlob, styles.blob3, style3]} />
+      <Animated.View style={[styles.auroraBlob, isDark ? styles.blob1Dark : styles.blob1, style1]} />
+      <Animated.View style={[styles.auroraBlob, isDark ? styles.blob2Dark : styles.blob2, style2]} />
+      <Animated.View style={[styles.auroraBlob, isDark ? styles.blob3Dark : styles.blob3, style3]} />
       <View style={styles.frostOverlay} />
+      {/* Stars for Moon Mode */}
+      {isDark && <FloatingParticles count={15} />} 
     </View>
   );
 });
@@ -117,7 +122,9 @@ interface GlassCardProps {
   intensity?: number;
 }
 
+// GlassCard updated
 export function GlassCard({ children, style, onPress, intensity = 50 }: GlassCardProps) {
+  const { colors, isDark } = useTheme(); // NEW
   const scale = useSharedValue(1);
   const animStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
 
@@ -129,11 +136,16 @@ export function GlassCard({ children, style, onPress, intensity = 50 }: GlassCar
       styles.glassCard, 
       animStyle, 
       style, 
-      { backgroundColor: 'rgba(255, 255, 255, 0.85)', overflow: 'hidden', padding: 16 }
+      { 
+        backgroundColor: colors.bgCard, // DYNAMIC
+        borderColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(255,255,255,0.6)', // Subtle border for dark mode
+      }  
     ]}>
       {children}
     </Animated.View>
   );
+// ... wrapping logic same ...
+
 
   if (onPress) {
     return (
@@ -209,25 +221,37 @@ interface ActivityCardProps {
   description: string;
   icon: string;
   color: string;
+  gradient?: [string, string];
   duration: string;
   onPress?: () => void;
   delay?: number;
 }
 
-export function ActivityCard({ title, description, icon, color, duration, onPress, delay = 0 }: ActivityCardProps) {
+export function ActivityCard({ title, description, icon, color, gradient, duration, onPress, delay = 0 }: ActivityCardProps) {
+  const { colors } = useTheme();
   return (
     <Animated.View entering={FadeInUp.duration(400).delay(delay)}>
       <GlassCard onPress={onPress} style={styles.activityCard}>
-        <View style={[styles.activityIconWrap, { backgroundColor: color + '18' }]}>
-          <Ionicons name={icon as any} size={24} color={color} />
-        </View>
+        {gradient ? (
+          <LinearGradient
+            colors={gradient}
+            style={styles.activityIconWrap}
+            start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+          >
+            <Ionicons name={icon as any} size={24} color="#FFF" />
+          </LinearGradient>
+        ) : (
+          <View style={[styles.activityIconWrap, { backgroundColor: color + '18' }]}>
+            <Ionicons name={icon as any} size={24} color={color} />
+          </View>
+        )}
         <View style={styles.activityContent}>
-          <Text style={styles.activityTitle}>{title}</Text>
-          <Text style={styles.activityDesc}>{description}</Text>
+          <Text style={[styles.activityTitle, { color: colors.textPrimary }]}>{title}</Text>
+          <Text style={[styles.activityDesc, { color: colors.textSecondary }]}>{description}</Text>
         </View>
         <View style={styles.activityRight}>
-          <Text style={styles.activityDuration}>{duration}</Text>
-          <Ionicons name="chevron-forward" size={18} color={Colors.textLight} />
+          <Text style={[styles.activityDuration, { color: colors.textLight }]}>{duration}</Text>
+          <Ionicons name="chevron-forward" size={18} color={colors.textLight} />
         </View>
       </GlassCard>
     </Animated.View>
@@ -244,7 +268,13 @@ interface MoodButtonProps {
 }
 
 export function MoodButton({ mood, selected, onPress }: MoodButtonProps) {
+  const { colors } = useTheme();
   const config = MoodConfig[mood];
+  // Note: config.color is static from MoodConfig, but we might want to map it if we really need dynamic mood colors. 
+  // However, `colors.mood...` exists in the theme. Let's try to map it if possible, strictly we'd need to change MoodConfig to return keys, not values.
+  // For now, let's keep MoodConfig colors as they are likely bright enough.
+  // But the "unselected" border and textLight need to be dynamic.
+  
   const scale = useSharedValue(selected ? 1.15 : 1);
   scale.value = withSpring(selected ? 1.15 : 1, { damping: 12, stiffness: 150 });
 
@@ -262,15 +292,15 @@ export function MoodButton({ mood, selected, onPress }: MoodButtonProps) {
           styles.moodIconCircle,
           selected
             ? { backgroundColor: config.color + '18', borderColor: config.color, borderWidth: 2 }
-            : { backgroundColor: 'rgba(255,255,255,0.8)', borderColor: 'rgba(0,0,0,0.06)', borderWidth: 1.5 },
+            : { backgroundColor: colors.bgCard, borderColor: colors.textLight + '20', borderWidth: 1.5 },
         ]}>
-          <Ionicons name={config.icon as any} size={22} color={selected ? config.color : Colors.textLight} />
+          <Ionicons name={config.icon as any} size={22} color={selected ? config.color : colors.textLight} />
         </View>
         {selected && <View style={[styles.moodDotIndicator, { backgroundColor: config.color }]} />}
       </Animated.View>
       <Text style={[
         styles.moodLabel,
-        selected && { color: config.color, fontWeight: '700' },
+        selected ? { color: config.color, fontWeight: '700' } : { color: colors.textSecondary },
       ]}>{config.label}</Text>
     </Pressable>
   );
@@ -474,10 +504,11 @@ interface SectionHeaderProps {
 }
 
 export function SectionHeader({ title, subtitle, style }: SectionHeaderProps) {
+  const { colors } = useTheme();
   return (
     <View style={[{ marginBottom: 16 }, style]}>
-      <Text style={styles.sectionTitle}>{title}</Text>
-      {subtitle && <Text style={styles.sectionSubtitle}>{subtitle}</Text>}
+      <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>{title}</Text>
+      {subtitle && <Text style={[styles.sectionSubtitle, { color: colors.textSecondary }]}>{subtitle}</Text>}
     </View>
   );
 }
@@ -494,6 +525,7 @@ interface FeatureButtonProps {
 
 // FeatureButton
 export function FeatureButton({ title, icon, color, onPress }: FeatureButtonProps) {
+  const { colors } = useTheme();
   return (
     <Pressable
       onPress={() => {
@@ -506,7 +538,7 @@ export function FeatureButton({ title, icon, color, onPress }: FeatureButtonProp
       <View style={[styles.featureIconWrap, { backgroundColor: color + '15' }]}>
         <Ionicons name={icon as any} size={24} color={color} />
       </View>
-      <Text style={styles.featureBtnText}>{title}</Text>
+      <Text style={[styles.featureBtnText, { color: colors.textPrimary }]}>{title}</Text>
     </Pressable>
   );
 }
@@ -521,6 +553,8 @@ interface ChatBubbleProps {
 }
 
 export function ChatBubble({ text, isUser, showAvatar }: ChatBubbleProps) {
+  const { colors, isDark } = useTheme(); // NEW
+
   return (
     <View style={[styles.bubbleRow, isUser && styles.bubbleRowUser]}>
       {!isUser && showAvatar && (
@@ -528,8 +562,19 @@ export function ChatBubble({ text, isUser, showAvatar }: ChatBubbleProps) {
           <Ionicons name="happy-outline" size={16} color="#FFF" />
         </LinearGradient>
       )}
-      <View style={[styles.bubble, isUser ? styles.bubbleUser : styles.bubbleBot]}>
-        <Text style={[styles.bubbleText, isUser && { color: '#FFF' }]}>{text}</Text>
+      <View style={[
+        styles.bubble,
+        isUser ? styles.bubbleUser : styles.bubbleBot,
+        // DYNAMIC OVERRIDES
+        isUser ? { backgroundColor: colors.primary } : { 
+          backgroundColor: isDark ? colors.bgCard : 'rgba(255,255,255,0.9)',
+          borderColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.04)' 
+        }
+      ]}>
+        <Text style={[
+          styles.bubbleText, 
+          isUser ? { color: '#FFF' } : { color: colors.textPrimary }
+        ]}>{text}</Text>
       </View>
     </View>
   );
@@ -539,6 +584,7 @@ export function ChatBubble({ text, isUser, showAvatar }: ChatBubbleProps) {
 // TYPING INDICATOR  (animated dots)
 // ============================================================
 export function TypingIndicator() {
+  const { colors, isDark } = useTheme(); // NEW
   const dot1 = useSharedValue(0);
   const dot2 = useSharedValue(0);
   const dot3 = useSharedValue(0);
@@ -558,52 +604,117 @@ export function TypingIndicator() {
       <LinearGradient colors={[...Gradients.jewel]} style={styles.bubbleAvatar}>
         <Ionicons name="happy-outline" size={16} color="#FFF" />
       </LinearGradient>
-      <View style={[styles.bubble, styles.bubbleBot, { flexDirection: 'row', gap: 4, paddingVertical: 14 }]}>
-        <Animated.View style={[styles.typingDot, d1]} />
-        <Animated.View style={[styles.typingDot, d2]} />
-        <Animated.View style={[styles.typingDot, d3]} />
+      <View style={[
+        styles.bubble, 
+        styles.bubbleBot, 
+        { 
+          flexDirection: 'row', gap: 4, paddingVertical: 14,
+          backgroundColor: isDark ? colors.bgCard : 'rgba(255,255,255,0.9)', // DYNAMIC matches bot bubble
+          borderColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.04)'
+        }
+      ]}>
+        <Animated.View style={[styles.typingDot, d1, { backgroundColor: colors.textLight }]} />
+        <Animated.View style={[styles.typingDot, d2, { backgroundColor: colors.textLight }]} />
+        <Animated.View style={[styles.typingDot, d3, { backgroundColor: colors.textLight }]} />
       </View>
     </View>
   );
 }
 
 // ============================================================
-// WEEKLY CHART  (SVG-style mood graph)
+// WEEKLY PROGRESS RING (RF-18)
 // ============================================================
-interface WeeklyChartProps {
+const AnimatedCircle = Animated.createAnimatedComponent(Circle);
+
+interface WeeklyProgressRingProps {
   data: number[];
-  height?: number;
+  size?: number;
+  strokeWidth?: number;
 }
 
-export function WeeklyChart({ data, height = 120 }: WeeklyChartProps) {
-  const days = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
-  const maxVal = Math.max(...data, 1);
+export function WeeklyProgressRing({ data, size = 160, strokeWidth = 12 }: WeeklyProgressRingProps) {
+  const { colors } = useTheme(); // NEW
+  // Calculate average score (assuming max 5)
+  const total = data.reduce((acc, val) => acc + val, 0);
+  const average = total / (data.length || 1);
+  const progress = Math.min(average / 5, 1); // Normalize 0-1
+
+  const radius = (size - strokeWidth) / 2;
+  const circumference = 2 * Math.PI * radius;
+  
+  const animatedProgress = useSharedValue(0);
+
+  useEffect(() => {
+    animatedProgress.value = withTiming(progress, { duration: 1500, easing: Easing.out(Easing.exp) });
+  }, [progress]);
+
+  const animatedProps = useAnimatedProps(() => ({
+    strokeDashoffset: circumference * (1 - animatedProgress.value),
+  }));
+
+  const scoreText = Math.round(progress * 100);
 
   return (
-    <View style={[styles.chartContainer, { height }]}>
-      <View style={styles.chartRow}>
-        {data.map((val, i) => (
-          <View key={i} style={styles.chartBarWrap}>
-            <View style={styles.chartBarTrack}>
-              <Animated.View entering={FadeIn.delay(i * 80).duration(400)}>
-                <LinearGradient
-                  colors={[...Gradients.jewel]}
-                  style={[styles.chartBarFill, { height: `${(val / maxVal) * 100}%` as any }]}
-                />
-              </Animated.View>
-            </View>
-            <Text style={styles.chartBarLabel}>{days[i]}</Text>
-          </View>
-        ))}
+    <View style={{ alignItems: 'center', justifyContent: 'center', marginVertical: 16 }}>
+      <View style={{ width: size, height: size, justifyContent: 'center', alignItems: 'center' }}>
+        <Svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+          {/* Background Track */}
+          <Circle
+            cx={size / 2}
+            cy={size / 2}
+            r={radius}
+            stroke={colors.primary + '20'} // DYNAMIC
+            strokeWidth={strokeWidth}
+            fill="transparent"
+          />
+          {/* Progress Circle */}
+          <AnimatedCircle
+            cx={size / 2}
+            cy={size / 2}
+            r={radius}
+            stroke={colors.primary} // DYNAMIC
+            strokeWidth={strokeWidth}
+            fill="transparent"
+            strokeDasharray={circumference}
+            strokeLinecap="round"
+            rotation="-90"
+            origin={`${size / 2}, ${size / 2}`}
+            animatedProps={animatedProps}
+          />
+        </Svg>
+        
+        {/* Inner Content */}
+        <View style={StyleSheet.absoluteFillObject} pointerEvents="none">
+           <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', gap: 4 }}>
+              <Animated.Text 
+                entering={FadeInUp.delay(500)}
+                style={{ fontSize: 32, fontWeight: '700', color: colors.textPrimary, fontFamily: 'Poppins_700Bold' }} // DYNAMIC
+              >
+                {scoreText}%
+              </Animated.Text>
+              <Animated.Text 
+                entering={FadeInUp.delay(600)}
+                style={{ fontSize: 12, color: colors.textLight, fontFamily: 'Poppins_400Regular' }} // DYNAMIC
+              >
+                Bienestar Semanal
+              </Animated.Text>
+           </View>
+        </View>
       </View>
     </View>
   );
+}
+
+// Legacy Chart (kept for reference if needed, but not exported as main)
+export function WeeklyChartOld({ data }: { data: number[] }) {
+   return null; 
 }
 
 // ============================================================
 // AMBIENT SOUND BUTTON (Kawaii)
 // ============================================================
 export function AmbientButton() {
+  const { colors } = useTheme(); // NEW
   const [mode, setMode] = useState< 'off' | 'rain' | 'ocean' | 'fire' | 'birds' >('off');
   
   const handlePress = () => {
@@ -626,7 +737,7 @@ export function AmbientButton() {
   };
 
   const config = {
-    off: { icon: 'musical-notes-outline', color: Colors.textLight, label: 'Sonidos' },
+    off: { icon: 'musical-notes-outline', color: colors.textLight, label: 'Sonidos' }, // DYNAMIC
     rain: { icon: 'rainy', color: '#60A5FA', label: 'Lluvia' },
     ocean: { icon: 'water', color: '#3B82F6', label: 'Océano' },
     fire: { icon: 'flame', color: '#F97316', label: 'Fuego' },
@@ -645,12 +756,12 @@ export function AmbientButton() {
         entering={FadeIn}
         key={mode} // Re-animate on change
       >
-        <Ionicons name={current.icon as any} size={20} color={mode === 'off' ? Colors.textLight : current.color} />
+        <Ionicons name={current.icon as any} size={20} color={mode === 'off' ? colors.textLight : current.color} /> 
       </Animated.View>
       <Animated.Text 
         style={[
           styles.ambientLabel, 
-          { color: mode === 'off' ? Colors.textLight : current.color }
+          { color: mode === 'off' ? colors.textLight : current.color }
         ]}
         key={mode + 'text'}
         entering={FadeIn.duration(300)}
@@ -688,6 +799,21 @@ const styles = StyleSheet.create({
   blob3: {
     width: 220, height: 220,
     backgroundColor: 'rgba(168,230,207,0.10)',
+    bottom: 80, right: -40,
+  },
+  blob1Dark: {
+    width: 300, height: 300,
+    backgroundColor: 'rgba(167,139,250,0.15)',
+    top: -50, right: -80,
+  },
+  blob2Dark: {
+    width: 250, height: 250,
+    backgroundColor: 'rgba(91,155,213,0.15)',
+    top: 200, left: -60,
+  },
+  blob3Dark: {
+    width: 220, height: 220,
+    backgroundColor: 'rgba(200,182,255,0.10)',
     bottom: 80, right: -40,
   },
 

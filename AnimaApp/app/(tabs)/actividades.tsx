@@ -17,6 +17,10 @@ export default function ActividadesScreen() {
       router.push('/actividades/respiracion');
     } else if (activity.title.toLowerCase().includes('gratitud')) {
       router.push('/actividades/gratitud');
+    } else if (activity.title.toLowerCase().includes('relajación')) {
+      router.push('/actividades/relajacion');
+    } else if (activity.title.toLowerCase().includes('meditación')) {
+      router.push('/actividades/meditacion');
     }
     // Other activities show a placeholder for now
   };
@@ -44,6 +48,7 @@ export default function ActividadesScreen() {
             description={activity.description}
             icon={activity.icon}
             color={activity.color}
+            gradient={activity.gradient}
             duration={activity.duration}
             delay={i * 100}
             onPress={() => handleActivityPress(activity)}
