@@ -44,6 +44,9 @@ interface AppState {
   userEmail: string;
   showSplash: boolean;
   
+  // Plan (Emotional Route)
+  currentPlan: string | null;
+  
   // Mood
   currentMood: MoodType | null;
   moodHistory: MoodEntry[];
@@ -65,6 +68,7 @@ interface AppState {
   updateUser: (name: string) => void;
   logout: () => void;
   hideSplash: () => void;
+  setPlan: (planId: string) => void;
   setMood: (mood: MoodType) => void;
   saveMoodEntry: () => void;
   sendMessage: (text: string) => void;
@@ -129,6 +133,9 @@ export const useStore = create<AppState>()(
       userEmail: '',
       showSplash: true,
       
+      // Plan
+      currentPlan: null,
+      
       // Mood
       currentMood: null,
       moodHistory: [
@@ -161,9 +168,10 @@ export const useStore = create<AppState>()(
       updateUser: (name) => set({ userName: name }),
       logout: () => {
         SoundService.stopAmbient();
-        set({ isAuthenticated: false, userName: '', userEmail: '', messages: [] });
+        set({ isAuthenticated: false, userName: '', userEmail: '', messages: [], currentPlan: null });
       },
       hideSplash: () => set({ showSplash: false }),
+      setPlan: (planId) => set({ currentPlan: planId }),
       setMood: (mood) => set({ currentMood: mood }),
       saveMoodEntry: () => {
         const { currentMood, moodHistory } = get();
@@ -243,6 +251,7 @@ export const useStore = create<AppState>()(
         isAuthenticated: state.isAuthenticated,
         userName: state.userName,
         userEmail: state.userEmail,
+        currentPlan: state.currentPlan,
         moodHistory: state.moodHistory,
         weeklyMoodData: state.weeklyMoodData,
         messages: state.messages,

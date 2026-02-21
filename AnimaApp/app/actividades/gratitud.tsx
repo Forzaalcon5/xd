@@ -414,8 +414,11 @@ export default function GratitudeJournalScreen() {
                   textAlignVertical="top"
                 />
                 <View style={styles.inputButtons}>
-                  <Pressable onPress={() => { setShowInput(false); setInputText(''); }} style={styles.cancelBtn}>
-                    <Text style={styles.cancelBtnText}>Cancelar</Text>
+                  <Pressable 
+                    onPress={() => { setShowInput(false); setInputText(''); }} 
+                    style={[styles.cancelBtn, { borderColor: colors.primary }]}
+                  >
+                    <Text style={[styles.cancelBtnText, { color: colors.primary }]}>Cancelar</Text>
                   </Pressable>
                   <View style={{ flex: 1 }}>
                     <JewelButton title="Enviar" icon="sparkles-outline" onPress={handleAddItem} disabled={!inputText.trim()} />
@@ -495,9 +498,9 @@ const styles = StyleSheet.create({
   inputButtons: { flexDirection: 'row', gap: 10, alignItems: 'center' },
   cancelBtn: {
     flex: 1, paddingVertical: 14, borderRadius: 16, borderWidth: 1.5,
-    borderColor: Colors.primary, alignItems: 'center', justifyContent: 'center',
+    alignItems: 'center', justifyContent: 'center',
   },
-  cancelBtnText: { color: Colors.primary, fontSize: 15, fontWeight: '600' },
+  cancelBtnText: { fontSize: 15, fontWeight: '600' },
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0, 0, 0, 0.4)', justifyContent: 'center', alignItems: 'center' },
   modalCenter: { width: '100%', alignItems: 'center' },
   modalCard: {

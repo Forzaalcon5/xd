@@ -79,7 +79,7 @@ class SoundManager {
     try {
       // Keep processing until actual matches pending
       while (this.currentAmbientName !== this.pendingAmbient) {
-        const target = this.pendingAmbient;
+        const target: string | null = this.pendingAmbient;
         
         // A. Unload current if exists
         if (this.currentAmbient) {

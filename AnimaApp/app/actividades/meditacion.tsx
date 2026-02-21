@@ -9,6 +9,7 @@ import { useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Colors, Gradients } from '../../constants/theme';
+import { useTheme } from '../../hooks/useTheme';
 import { ScreenWrapper } from '../../components/ScreenWrapper';
 import { JewelButton } from '../../components/ui';
 
@@ -16,30 +17,58 @@ const { width } = Dimensions.get('window');
 
 export default function MeditacionScreen() {
   const router = useRouter();
-  
+  const { colors, isDark } = useTheme();
+
   // Animation values
   const orbScale = useSharedValue(1);
   const orbOpacity = useSharedValue(0.8);
   const ringScale = useSharedValue(1);
   const ringOpacity = useSharedValue(0.5);
 
+  const [instruction, setInstruction] = React.useState('Enfoca tu atención...');
+
   useEffect(() => {
-    // Start the loop immediately
-    startMeditationLoop();
+    // Slower, hypnotic visual (6s cycle)
+    const duration = 6000;
     
+    orbScale.value = withRepeat(
+      withSequence(
+        withTiming(1.3, { duration, easing: Easing.inOut(Easing.quad) }),
+        withTiming(1, { duration, easing: Easing.inOut(Easing.quad) })
+      ),
+      -1,
+      true
+    );
+
+    orbOpacity.value = withRepeat(
+      withSequence(
+        withTiming(0.9, { duration }),
+        withTiming(0.5, { duration })
+      ),
+      -1,
+      true
+    );
+
+    // Ring expands very slowly
+    ringScale.value = withRepeat(
+      withTiming(1.8, { duration: duration * 1.5, easing: Easing.out(Easing.quad) }),
+      -1,
+      false
+    );
+     
+    // Ring fades out
+    ringOpacity.value = withRepeat(
+      withSequence(
+        withTiming(0.4, { duration: duration * 0.75 }),
+        withTiming(0, { duration: duration * 0.75 })
+      ),
+      -1,
+      false
+    );
+
     // Play an intro haptic
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 
-    return () => {
-      // Cleanup handled by reanimated ideally
-    };
-  }, []);
-
-  const [instruction, setInstruction] = React.useState('Enfoca tu atención...');
-  
-  useEffect(() => {
-    startMeditationLoop();
-    
     // Mindfulness prompts (Non-rhythmic)
     const prompts = [
       "Solo observa la luz...",
@@ -115,13 +144,13 @@ export default function MeditacionScreen() {
     <ScreenWrapper style={styles.container}>
       {/* Dark Dream Background Overlay */}
       <LinearGradient 
-        colors={[...Gradients.dreamNight]} 
+        colors={isDark ? ['#0F172A', '#1E1B4B'] : [...Gradients.dreamNight]} 
         style={StyleSheet.absoluteFill} 
         start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
       />
 
       <View style={styles.header}>
-        <Pressable onPress={() => router.back()} style={styles.closeBtn}>
+        <Pressable onPress={() => router.back()} style={[styles.closeBtn, { backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(255,255,255,0.1)' }]}>
           <Ionicons name="close" size={24} color={Colors.dreamText} />
         </Pressable>
         {/* Empty view for balance */}

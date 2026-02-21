@@ -9,6 +9,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { Colors, Gradients } from '../../constants/theme';
+import { useTheme } from '../../hooks/useTheme';
 import { ScreenWrapper } from '../../components/ScreenWrapper';
 import { JewelButton } from '../../components/ui';
 
@@ -23,6 +24,7 @@ const BODY_STEPS = [
 
 export default function RelajacionScreen() {
   const router = useRouter();
+  const { colors, isDark } = useTheme();
   const [stepIndex, setStepIndex] = useState(-1); // -1: Intro, 0-4: Steps, 5: Outro
   const [phase, setPhase] = useState<'idle' | 'read' | 'tense' | 'relax'>('idle');
   const [timeLeft, setTimeLeft] = useState(0);
@@ -111,27 +113,27 @@ export default function RelajacionScreen() {
     <ScreenWrapper style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <Pressable onPress={() => router.back()} style={styles.backBtn}>
-          <Ionicons name="arrow-back" size={24} color={Colors.textPrimary} />
+        <Pressable onPress={() => router.back()} style={[styles.backBtn, { backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)' }]}>
+          <Ionicons name="arrow-back" size={24} color={colors.textPrimary} />
         </Pressable>
-        <Text style={styles.headerTitle}>Relajación Progresiva</Text>
+        <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>Relajación Progresiva</Text>
         <View style={{ width: 24 }} />
       </View>
 
       <View style={styles.content}>
         {stepIndex === -1 && (
           <Animated.View entering={FadeIn.duration(500)} style={styles.introSection}>
-            <View style={styles.iconCircle}>
-              <Ionicons name="body-outline" size={40} color={Colors.primary} />
+            <View style={[styles.iconCircle, { backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(91,155,213,0.1)' }]}>
+              <Ionicons name="body-outline" size={40} color={colors.primary} />
             </View>
-            <Text style={styles.title}>Relajación de Jacobson</Text>
-            <Text style={styles.subtitle}>
+            <Text style={[styles.title, { color: colors.textPrimary }]}>Relajación de Jacobson</Text>
+            <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
               Aprenderemos a soltar la tensión muscular acumulada.
             </Text>
-            <View style={styles.instructionList}>
-              <InstructionRow num="1" text="Lee la instrucción y prepárate." />
-              <InstructionRow num="2" text="Tensa fuerte el músculo cuando se te indique." />
-              <InstructionRow num="3" text="Suelta de golpe y disfruta la sensación." />
+            <View style={[styles.instructionList, { backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#FFF' }]}>
+              <InstructionRow num="1" text="Lee la instrucción y prepárate." isDark={isDark} colors={colors} />
+              <InstructionRow num="2" text="Tensa fuerte el músculo cuando se te indique." isDark={isDark} colors={colors} />
+              <InstructionRow num="3" text="Suelta de golpe y disfruta la sensación." isDark={isDark} colors={colors} />
             </View>
             <JewelButton title="Comenzar Sesión" onPress={startSession} style={{ width: '100%', marginTop: 20 }} />
           </Animated.View>
@@ -139,28 +141,28 @@ export default function RelajacionScreen() {
 
         {currentStep && (
           <Animated.View key={currentStep.id} entering={FadeIn.duration(300)} style={styles.activeSection}>
-            <Text style={styles.stepLabel}>{currentStep.label}</Text>
+            <Text style={[styles.stepLabel, { color: colors.textSecondary }]}>{currentStep.label}</Text>
             
             <View style={styles.visualContainer}>
               {/* Abstract Body Representation */}
               <View style={styles.bodySilhouette}>
-                <Ionicons name="person" size={280} color="#E2E8F0" />
+                <Ionicons name="person" size={280} color={isDark ? "rgba(255,255,255,0.05)" : "#E2E8F0"} />
                 {/* Active Highlight */}
                 <Animated.View style={[styles.highlightGlow, glowStyle]}>
                    <Ionicons name="person" size={280} color={phase === 'tense' ? '#FF6B6B' : (phase === 'relax' ? '#4ADE80' : '#CBD5E0')} />
                 </Animated.View>
               </View>
               
-              <Text style={styles.timerText}>{timeLeft}</Text>
+              <Text style={[styles.timerText, { color: colors.textPrimary }]}>{timeLeft}</Text>
             </View>
 
-            <Text style={styles.instructionText}>
+            <Text style={[styles.instructionText, { color: colors.textPrimary }]}>
               {phase === 'read' ? `Prepárate: ${currentStep.instruction}` : 
                phase === 'tense' ? '¡TENSA FUEERTE!' : 
                '¡SUELTA Y RELAJA!'}
             </Text>
             
-            <Text style={[styles.phaseLabel, { color: phase === 'tense' ? '#E53E3E' : (phase === 'relax' ? '#38A169' : Colors.textLight) }]}>
+            <Text style={[styles.phaseLabel, { color: phase === 'tense' ? '#E53E3E' : (phase === 'relax' ? '#38A169' : colors.textLight) }]}>
               {phase === 'read' ? 'L E E' : (phase === 'tense' ? 'T E N S I Ó N' : 'R E L A J A C I Ó N')}
             </Text>
           </Animated.View>
@@ -169,8 +171,8 @@ export default function RelajacionScreen() {
         {stepIndex === BODY_STEPS.length && (
           <Animated.View entering={FadeIn.duration(500)} style={styles.outroSection}>
             <Ionicons name="checkmark-circle" size={80} color="#4ADE80" />
-            <Text style={styles.title}>¡Cuerpo Relajado!</Text>
-            <Text style={styles.subtitle}>
+            <Text style={[styles.title, { color: colors.textPrimary }]}>¡Cuerpo Relajado!</Text>
+            <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
               Has completado el escaneo. Intenta llevar esta sensación de calma al resto de tu día.
             </Text>
             <JewelButton title="Finalizar" onPress={() => router.back()} style={{ width: '100%', marginTop: 20 }} />
@@ -181,13 +183,13 @@ export default function RelajacionScreen() {
   );
 }
 
-function InstructionRow({ num, text }: { num: string, text: string }) {
+function InstructionRow({ num, text, isDark, colors }: { num: string, text: string, isDark: boolean, colors: any }) {
   return (
     <View style={{ flexDirection: 'row', gap: 12, marginBottom: 16 }}>
-      <View style={styles.numBadge}>
+      <View style={[styles.numBadge, { backgroundColor: colors.primary }]}>
         <Text style={styles.numText}>{num}</Text>
       </View>
-      <Text style={styles.instructionRowText}>{text}</Text>
+      <Text style={[styles.instructionRowText, { color: colors.textSecondary }]}>{text}</Text>
     </View>
   );
 }

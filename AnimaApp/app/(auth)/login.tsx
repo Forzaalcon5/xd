@@ -1,23 +1,59 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View, Text, StyleSheet, TextInput, KeyboardAvoidingView,
-  Platform, Pressable, ScrollView, ActivityIndicator,
+  Platform, Pressable, ScrollView, ActivityIndicator, Dimensions,
 } from 'react-native';
-import Animated, { FadeIn, FadeOut, ZoomIn } from 'react-native-reanimated';
+import Animated, { FadeIn, FadeOut, ZoomIn, FadeInUp, useSharedValue, useAnimatedStyle, withRepeat, withTiming, withSequence, Easing, interpolate } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { Colors, Gradients } from '../../constants/theme';
-import { Mascot, AuroraBackground } from '../../components/ui';
+import { useTheme } from '../../hooks/useTheme';
+import { Mascot } from '../../components/ui';
 import { PremiumButton } from '../../components/ui/PremiumButton';
 import { GlassCard } from '../../components/ui/GlassCard';
 import { AnimatedEntrance } from '../../components/ui/AnimatedEntrance';
 import { ParticlesBackground } from '../../components/ui/ParticlesBackground';
 import { useStore } from '../../store/useStore';
 
+const { width: SCREEN_W } = Dimensions.get('window');
+
+// Animated decorative orb
+function FloatingOrb({ delay, color, size, top, left }: {
+  delay: number; color: string; size: number; top: number; left: number;
+}) {
+  const anim = useSharedValue(0);
+  useEffect(() => {
+    anim.value = withRepeat(
+      withSequence(
+        withTiming(1, { duration: 3000 + delay, easing: Easing.inOut(Easing.ease) }),
+        withTiming(0, { duration: 3000 + delay, easing: Easing.inOut(Easing.ease) }),
+      ), -1, true
+    );
+  }, []);
+
+  const orbStyle = useAnimatedStyle(() => ({
+    transform: [
+      { translateY: interpolate(anim.value, [0, 1], [0, -15]) },
+      { scale: interpolate(anim.value, [0, 1], [1, 1.15]) },
+    ],
+    opacity: interpolate(anim.value, [0, 0.5, 1], [0.3, 0.5, 0.3]),
+  }));
+
+  return (
+    <Animated.View style={[{
+      position: 'absolute', top, left,
+      width: size, height: size, borderRadius: size / 2,
+      backgroundColor: color,
+    }, orbStyle]} />
+  );
+}
+
 export default function LoginScreen() {
   const router = useRouter();
+  const { colors, isDark } = useTheme();
   const login = useStore((s) => s.login);
+  const currentPlan = useStore((s) => s.currentPlan);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -29,30 +65,52 @@ export default function LoginScreen() {
     setTimeout(() => {
       login(email.trim(), email.split('@')[0]);
       setLoading(false);
-      router.replace('/(tabs)');
+      if (!currentPlan) {
+        router.replace('/(onboarding)/select-plan');
+      } else {
+        router.replace('/(tabs)');
+      }
     }, 1500);
   };
 
   return (
     <View style={styles.container}>
-      <LinearGradient colors={[...Gradients.loginBg]} style={StyleSheet.absoluteFill} />
-      <AuroraBackground />
-      <ParticlesBackground count={20} />
+      {/* Premium gradient background */}
+      <LinearGradient
+        colors={isDark ? ['#0F172A', '#1E1B4B'] : [...Gradients.loginBg]}
+        locations={[0, 1]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={StyleSheet.absoluteFill}
+      />
+
+      {/* Decorative floating orbs */}
+      <FloatingOrb delay={0} color="rgba(91,155,213,0.12)" size={120} top={60} left={-30} />
+      <FloatingOrb delay={500} color="rgba(155,142,196,0.10)" size={100} top={140} left={SCREEN_W - 60} />
+      <FloatingOrb delay={1000} color="rgba(168,230,207,0.12)" size={80} top={SCREEN_W * 0.8} left={20} />
+      <FloatingOrb delay={800} color="rgba(247,201,126,0.10)" size={60} top={SCREEN_W * 0.5} left={SCREEN_W - 40} />
+
+      <ParticlesBackground count={15} />
 
       {/* Loading Overlay */}
       {loading && (
         <Animated.View
           entering={FadeIn.duration(200)}
           exiting={FadeOut.duration(200)}
-          style={styles.loadingOverlay}
+          style={[styles.loadingOverlay, { backgroundColor: isDark ? 'rgba(15,23,42,0.8)' : 'rgba(232,244,253,0.8)' }]}
         >
-          <GlassCard style={styles.loadingCard} intensity={80}>
-            <View style={{ alignItems: 'center' }}>
-              <Mascot size={80} variant="happy" />
-              <ActivityIndicator size="small" color={Colors.primary} style={{ marginTop: 12 }} />
-              <Text style={styles.loadingText}>Entrando...</Text>
-            </View>
-          </GlassCard>
+          <Animated.View entering={FadeInUp.duration(400)}>
+            <GlassCard style={styles.loadingCard}>
+              <View style={{ alignItems: 'center' }}>
+                <Mascot size={90} variant="happy" />
+                <View style={styles.loadingDots}>
+                  <ActivityIndicator size="small" color={colors.primary} />
+                </View>
+                <Text style={[styles.loadingTitle, { color: colors.textPrimary }]}>Iniciando sesión</Text>
+                <Text style={[styles.loadingSubtext, { color: colors.textLight }]}>Preparando tu espacio...</Text>
+              </View>
+            </GlassCard>
+          </Animated.View>
         </Animated.View>
       )}
 
@@ -75,21 +133,28 @@ export default function LoginScreen() {
           {/* Title */}
           <AnimatedEntrance delay={100} from="top">
             <View style={styles.titleSection}>
-              <Text style={styles.title}>Bienvenido a Aníma</Text>
-              <Text style={styles.subtitle}>Tu compañero emocional</Text>
+              <Text style={[styles.title, { color: colors.textPrimary }]}>Bienvenido a Aníma</Text>
+              <Text style={[styles.subtitle, { color: colors.textLight }]}>Tu compañero emocional</Text>
             </View>
           </AnimatedEntrance>
 
           {/* Form Card via GlassCard */}
           <AnimatedEntrance delay={200} from="bottom">
-            <GlassCard style={styles.formContainer} intensity={40}>
+            <GlassCard style={styles.formContainer}>
               <View style={styles.formContent}>
-                <View style={styles.inputWrap}>
-                  <Ionicons name="mail-outline" size={20} color={Colors.textLight} style={styles.inputIcon} />
+                <View style={[
+                  styles.inputWrap, 
+                  { 
+                    backgroundColor: isDark ? 'rgba(255,255,255,0.02)' : '#F7FAFC',
+                    borderColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)',
+                    borderWidth: 1 
+                  }
+                ]}>
+                  <Ionicons name="mail-outline" size={20} color={colors.textLight} style={styles.inputIcon} />
                   <TextInput
-                    style={styles.input}
+                    style={[styles.input, { color: colors.textPrimary }]}
                     placeholder="Correo electrónico"
-                    placeholderTextColor={Colors.textLight}
+                    placeholderTextColor={colors.textLight}
                     value={email}
                     onChangeText={setEmail}
                     keyboardType="email-address"
@@ -97,18 +162,25 @@ export default function LoginScreen() {
                   />
                 </View>
 
-                <View style={styles.inputWrap}>
-                  <Ionicons name="lock-closed-outline" size={20} color={Colors.textLight} style={styles.inputIcon} />
+                <View style={[
+                  styles.inputWrap, 
+                  { 
+                    backgroundColor: isDark ? 'rgba(255,255,255,0.02)' : '#F7FAFC',
+                    borderColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)',
+                    borderWidth: 1 
+                  }
+                ]}>
+                  <Ionicons name="lock-closed-outline" size={20} color={colors.textLight} style={styles.inputIcon} />
                   <TextInput
-                    style={styles.input}
+                    style={[styles.input, { color: colors.textPrimary }]}
                     placeholder="Contraseña"
-                    placeholderTextColor={Colors.textLight}
+                    placeholderTextColor={colors.textLight}
                     value={password}
                     onChangeText={setPassword}
                     secureTextEntry={!showPassword}
                   />
                   <Pressable onPress={() => setShowPassword(!showPassword)} style={styles.eyeBtn}>
-                    <Ionicons name={showPassword ? 'eye-off-outline' : 'eye-outline'} size={20} color={Colors.textLight} />
+                    <Ionicons name={showPassword ? 'eye-off-outline' : 'eye-outline'} size={20} color={colors.textLight} />
                   </Pressable>
                 </View>
 
@@ -130,9 +202,9 @@ export default function LoginScreen() {
           {/* Register link */}
           <AnimatedEntrance delay={400}>
             <View style={styles.registerSection}>
-              <Text style={styles.registerText}>¿No tienes cuenta? </Text>
+              <Text style={[styles.registerText, { color: colors.textSecondary }]}>¿No tienes cuenta? </Text>
               <Pressable onPress={() => router.push('/(auth)/register')}>
-                <Text style={styles.registerLink}>Crear Cuenta</Text>
+                <Text style={[styles.registerLink, { color: colors.primary }]}>Crear Cuenta</Text>
               </Pressable>
             </View>
           </AnimatedEntrance>
@@ -151,17 +223,21 @@ const styles = StyleSheet.create({
   // Loading Overlay
   loadingOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(232,244,253,0.6)',
     justifyContent: 'center', alignItems: 'center',
     zIndex: 100,
   },
   loadingCard: {
-    padding: 32,
-    borderRadius: 28,
+    borderRadius: 32, paddingVertical: 36, paddingHorizontal: 40,
+    alignItems: 'center',
   },
-  loadingText: {
-    marginTop: 10, fontSize: 15, color: Colors.textSecondary,
-    fontFamily: 'Poppins_600SemiBold',
+  loadingDots: { marginTop: 16 },
+  loadingTitle: {
+    marginTop: 14, fontSize: 18,
+    fontFamily: 'Poppins_700Bold',
+  },
+  loadingSubtext: {
+    marginTop: 4, fontSize: 13,
+    fontFamily: 'Poppins_400Regular',
   },
   mascotSection: {
     alignItems: 'center', marginBottom: 20,
@@ -189,7 +265,6 @@ const styles = StyleSheet.create({
   },
   inputWrap: {
     flexDirection: 'row', alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.8)', // Higher opacity for visibility without blur
     borderRadius: 16, paddingHorizontal: 16,
     height: 56,
   },

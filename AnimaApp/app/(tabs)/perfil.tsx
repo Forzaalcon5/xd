@@ -52,11 +52,11 @@ export default function PerfilScreen() {
   };
 
   const settingsItems = [
-    { icon: 'notifications-outline', label: 'Notificaciones', color: Colors.primary, type: 'toggle', action: () => {} },
-    { icon: 'moon-outline', label: 'Modo Lunar', color: Colors.secondary, type: 'toggle', action: toggleTheme },
-    { icon: 'shield-checkmark-outline', label: 'Privacidad y Datos', color: Colors.mint, type: 'link' },
-    { icon: 'heart-outline', label: 'Invitar amigos', color: Colors.accent, type: 'link' },
-    { icon: 'help-buoy-outline', label: 'Ayuda y Soporte', color: Colors.textLight, type: 'link' },
+    { icon: 'notifications-outline', label: 'Notificaciones', color: colors.primary, type: 'toggle', action: () => {} },
+    { icon: 'moon-outline', label: 'Modo Lunar', color: colors.secondary, type: 'toggle', action: toggleTheme },
+    { icon: 'shield-checkmark-outline', label: 'Privacidad y Datos', color: colors.mint, type: 'link' },
+    { icon: 'heart-outline', label: 'Invitar amigos', color: colors.accent, type: 'link' },
+    { icon: 'help-buoy-outline', label: 'Ayuda y Soporte', color: colors.textLight, type: 'link' },
   ];
 
   return (
@@ -91,8 +91,17 @@ export default function PerfilScreen() {
             <Text style={[styles.userEmail, { color: colors.textSecondary }]}>{userEmail || 'email@example.com'}</Text>
           </View>
 
-          <Pressable style={styles.editProfileBtn} onPress={openEditModal}>
-            <Text style={styles.editProfileText}>Editar Perfil</Text>
+          <Pressable 
+            style={[
+              styles.editProfileBtn, 
+              { 
+                backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)', 
+                borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)' 
+              }
+            ]} 
+            onPress={openEditModal}
+          >
+            <Text style={[styles.editProfileText, { color: colors.textSecondary }]}>Editar Perfil</Text>
           </Pressable>
         </Animated.View>
 
@@ -106,8 +115,8 @@ export default function PerfilScreen() {
                 onPress={item.action}
                 style={({ pressed }) => [
                   styles.settingsItem, 
-                  i < settingsItems.length - 1 && styles.settingsBorder,
-                  pressed && { backgroundColor: 'rgba(0,0,0,0.02)' }
+                  i < settingsItems.length - 1 && [styles.settingsBorder, { borderBottomColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.04)' }],
+                  pressed && { backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.02)' }
                 ]}
               >
                 <View style={[styles.settingsIconWrap, { backgroundColor: item.color + '10' }]}>
@@ -117,14 +126,14 @@ export default function PerfilScreen() {
                 
                 {item.type === 'toggle' ? (
                    <View style={[styles.toggleTrack, { 
-                     backgroundColor: (item.label === 'Modo Lunar' && isDark) ? Colors.primary : '#E2E8F0' 
+                     backgroundColor: (item.label === 'Modo Lunar' && isDark) ? Colors.primary : (isDark ? 'rgba(255,255,255,0.1)' : '#E2E8F0') 
                    }]}>
                       <View style={[styles.toggleThumb, { 
                         left: (item.label === 'Modo Lunar' && isDark) ? 22 : 2 
                       }]} />
                    </View>
                 ) : (
-                  <Ionicons name="chevron-forward" size={16} color={Colors.textLight} />
+                  <Ionicons name="chevron-forward" size={16} color={colors.textLight} />
                 )}
               </Pressable>
             ))}
@@ -153,13 +162,12 @@ export default function PerfilScreen() {
         {/* Footer info */}
         <View style={styles.footerSection}>
           <Mascot size={60} variant="happy" />
-          <Text style={styles.versionText}>Aníma v1.0.2 • Build 2026</Text>
+          <Text style={[styles.versionText, { color: colors.textLight }]}>Aníma v1.0.2 • Build 2026</Text>
         </View>
 
         <View style={{ height: 110 }} />
       </ScrollView>
 
-      {/* EDIT PROFILE MODAL */}
       <Modal
         visible={isEditing}
         transparent
@@ -170,23 +178,30 @@ export default function PerfilScreen() {
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           style={styles.modalOverlay}
         >
-          <View style={styles.modalContent}>
+          <View style={[styles.modalContent, { backgroundColor: colors.bgCard }]}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Editar Perfil</Text>
+              <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>Editar Perfil</Text>
               <Pressable onPress={() => setIsEditing(false)}>
-                <Ionicons name="close" size={24} color={Colors.textLight} />
+                <Ionicons name="close" size={24} color={colors.textLight} />
               </Pressable>
             </View>
             
             <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Nombre de usuario</Text>
+              <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>Nombre de usuario</Text>
               <TextInput
-                style={styles.input}
+                style={[
+                  styles.input, 
+                  { 
+                    backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#F7FAFC',
+                    color: colors.textPrimary,
+                    borderColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'
+                  }
+                ]}
                 value={newName}
                 onChangeText={setNewName}
                 placeholder="Tu nombre"
                 autoFocus
-                placeholderTextColor={Colors.textLight}
+                placeholderTextColor={colors.textLight}
               />
             </View>
 

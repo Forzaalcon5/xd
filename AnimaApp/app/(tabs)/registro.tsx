@@ -6,12 +6,14 @@ import { Ionicons } from '@expo/vector-icons';
 import { Colors, Gradients, MoodConfig } from '../../constants/theme';
 import { GlassCard, SectionHeader, Mascot, FloatingParticles } from '../../components/ui';
 import { ScreenWrapper } from '../../components/ScreenWrapper';
+import { useTheme } from '../../hooks/useTheme';
 import { useStore, MoodType } from '../../store/useStore';
 
 const { width: SCREEN_W } = Dimensions.get('window');
 
 // Mini mood bar chart component
 function MoodMiniChart({ history }: { history: any[] }) {
+  const { colors } = useTheme();
   const last7 = history.slice(-7);
   const moodLevels: Record<string, number> = {
     'animado': 5, 'mejor': 4, 'neutral': 3, 'triste': 2, 'muy_triste': 1,
@@ -28,7 +30,7 @@ function MoodMiniChart({ history }: { history: any[] }) {
             <View style={[styles.chartBar, { height, backgroundColor: config?.color || '#B8C4D0' }]}>
               <View style={[styles.chartBarGlow, { backgroundColor: config?.color + '30' }]} />
             </View>
-            <Text style={styles.chartBarLabel}>
+            <Text style={[styles.chartBarLabel, { color: colors.textLight }]}>
               {entry.date?.split('/')[0] || ''}
             </Text>
           </View>
@@ -39,7 +41,7 @@ function MoodMiniChart({ history }: { history: any[] }) {
       {Array.from({ length: Math.max(0, 7 - last7.length) }).map((_, i) => (
         <View key={`empty-${i}`} style={styles.chartBarWrap}>
           <View style={[styles.chartBar, { height: 8, backgroundColor: 'rgba(0,0,0,0.04)' }]} />
-          <Text style={styles.chartBarLabel}>—</Text>
+          <Text style={[styles.chartBarLabel, { color: colors.textLight }]}>—</Text>
         </View>
       ))}
     </View>
@@ -54,6 +56,7 @@ function getStreak(history: any[]): number {
 }
 
 export default function RegistroScreen() {
+  const { colors } = useTheme();
   const moodHistory = useStore((s) => s.moodHistory);
   const journalEntries = useStore((s) => s.journalEntries) ?? [];
   const recentActivities = useStore((s) => s.recentActivities);
@@ -82,8 +85,8 @@ export default function RegistroScreen() {
         {/* Header */}
         <Animated.View entering={FadeInUp.duration(400)} style={styles.headerRow}>
           <View>
-            <Text style={styles.headerTitle}>Mi Registro</Text>
-            <Text style={styles.headerSubtitle}>Tu viaje emocional</Text>
+            <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>Mi Registro</Text>
+            <Text style={[styles.headerSubtitle, { color: colors.textLight }]}>Tu viaje emocional</Text>
           </View>
           {streak > 0 && (
             <View style={styles.streakBadge}>
@@ -101,10 +104,10 @@ export default function RegistroScreen() {
               style={styles.statGradient}
             >
               <View style={[styles.statIconWrap, { backgroundColor: Colors.primary + '18' }]}>
-                <Ionicons name="heart" size={18} color={Colors.primary} />
+                <Ionicons name="heart" size={18} color={colors.primary} />
               </View>
-              <Text style={styles.statNumber}>{moodHistory.length}</Text>
-              <Text style={styles.statLabel}>Estados</Text>
+              <Text style={[styles.statNumber, { color: colors.textPrimary }]}>{moodHistory.length}</Text>
+              <Text style={[styles.statLabel, { color: colors.textLight }]}>Estados</Text>
             </LinearGradient>
           </View>
 
@@ -116,8 +119,8 @@ export default function RegistroScreen() {
               <View style={[styles.statIconWrap, { backgroundColor: 'rgba(252,211,77,0.18)' }]}>
                 <Ionicons name="star" size={18} color="#FCD34D" />
               </View>
-              <Text style={styles.statNumber}>{journalEntries.length}</Text>
-              <Text style={styles.statLabel}>Gratitudes</Text>
+              <Text style={[styles.statNumber, { color: colors.textPrimary }]}>{journalEntries.length}</Text>
+              <Text style={[styles.statLabel, { color: colors.textLight }]}>Gratitudes</Text>
             </LinearGradient>
           </View>
 
@@ -126,11 +129,11 @@ export default function RegistroScreen() {
               colors={[Colors.mint + '20', Colors.mint + '05']}
               style={styles.statGradient}
             >
-              <View style={[styles.statIconWrap, { backgroundColor: Colors.mint + '20' }]}>
-                <Ionicons name="sparkles" size={18} color={Colors.mint} />
+              <View style={[styles.statIconWrap, { backgroundColor: colors.mint + '20' }]}>
+                <Ionicons name="sparkles" size={18} color={colors.mint} />
               </View>
-              <Text style={styles.statNumber}>{recentActivities.length}</Text>
-              <Text style={styles.statLabel}>Actividades</Text>
+              <Text style={[styles.statNumber, { color: colors.textPrimary }]}>{recentActivities.length}</Text>
+              <Text style={[styles.statLabel, { color: colors.textLight }]}>Actividades</Text>
             </LinearGradient>
           </View>
         </Animated.View>
@@ -140,7 +143,7 @@ export default function RegistroScreen() {
           <Animated.View entering={FadeInUp.duration(400).delay(200)}>
             <GlassCard style={styles.chartCard}>
               <View style={styles.chartHeader}>
-                <Text style={styles.chartTitle}>Últimos 7 registros</Text>
+                <Text style={[styles.chartTitle, { color: colors.textPrimary }]}>Últimos 7 registros</Text>
                 {dominantMood && (
                   <View style={styles.dominantBadge}>
                     <Ionicons
@@ -191,8 +194,8 @@ export default function RegistroScreen() {
                         />
                       </View>
                       <View style={{ flex: 1, gap: 2 }}>
-                        <Text style={styles.timelineLabel}>{entry.label}</Text>
-                        <Text style={styles.timelineDate}>{entry.date}</Text>
+                        <Text style={[styles.timelineLabel, { color: colors.textPrimary }]}>{entry.label}</Text>
+                        <Text style={[styles.timelineDate, { color: colors.textLight }]}>{entry.date}</Text>
                       </View>
                       <View style={[styles.timelineMoodTag, { backgroundColor: (config?.color || '#B8C4D0') + '12' }]}>
                         <Text style={[styles.timelineMoodTagText, { color: config?.color }]}>
@@ -209,8 +212,8 @@ export default function RegistroScreen() {
           <Animated.View entering={FadeIn.duration(600).delay(400)}>
             <GlassCard style={styles.emptyCard}>
               <Mascot size={100} variant="greeting" />
-              <Text style={styles.emptyTitle}>¡Comienza tu viaje!</Text>
-              <Text style={styles.emptyText}>
+              <Text style={[styles.emptyTitle, { color: colors.textPrimary }]}>¡Comienza tu viaje!</Text>
+              <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
                 Registra cómo te sientes cada día y descubre patrones en tu bienestar emocional.
               </Text>
               <View style={styles.emptySteps}>
@@ -220,11 +223,11 @@ export default function RegistroScreen() {
                   { icon: 'trending-up-outline', text: 'Observa tu progreso' },
                 ].map((step, i) => (
                   <View key={i} style={styles.emptyStep}>
-                    <View style={styles.emptyStepNum}>
-                      <Text style={styles.emptyStepNumText}>{i + 1}</Text>
+                    <View style={[styles.emptyStepNum, { backgroundColor: colors.primary + '15' }]}>
+                      <Text style={[styles.emptyStepNumText, { color: colors.primary }]}>{i + 1}</Text>
                     </View>
-                    <Ionicons name={step.icon as any} size={16} color={Colors.primary} />
-                    <Text style={styles.emptyStepText}>{step.text}</Text>
+                    <Ionicons name={step.icon as any} size={16} color={colors.primary} />
+                    <Text style={[styles.emptyStepText, { color: colors.textSecondary }]}>{step.text}</Text>
                   </View>
                 ))}
               </View>

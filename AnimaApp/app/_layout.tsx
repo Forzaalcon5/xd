@@ -16,6 +16,7 @@ import { ThemeProvider } from '../context/ThemeContext';
 function AppLayout() {
   const [showSplash, setShowSplash] = useState(true);
   const isAuthenticated = useStore((s) => s.isAuthenticated);
+  const currentPlan = useStore((s) => s.currentPlan);
 
   // Load premium fonts
   const [fontsLoaded] = useFonts({
@@ -35,11 +36,13 @@ function AppLayout() {
     if (!showSplash) {
       if (!isAuthenticated) {
         router.replace('/(auth)/login');
+      } else if (!currentPlan) {
+        router.replace('/(onboarding)/select-plan');
       } else {
         router.replace('/(tabs)');
       }
     }
-  }, [showSplash, isAuthenticated]);
+  }, [showSplash, isAuthenticated, currentPlan]);
 
   // Wait for fonts to load before anything
   if (!fontsLoaded) {
@@ -64,6 +67,7 @@ function AppLayout() {
         contentStyle: { backgroundColor: 'transparent' },
       }}>
         <Stack.Screen name="(auth)" />
+        <Stack.Screen name="(onboarding)" />
         <Stack.Screen name="(tabs)" />
         <Stack.Screen
           name="actividades/respiracion"

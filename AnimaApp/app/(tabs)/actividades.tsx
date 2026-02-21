@@ -4,12 +4,14 @@ import Animated, { FadeInUp } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { Colors, Gradients } from '../../constants/theme';
+import { useTheme } from '../../hooks/useTheme';
 import { ActivityCard, SectionHeader, Mascot } from '../../components/ui';
 import { ScreenWrapper } from '../../components/ScreenWrapper';
 import { useStore } from '../../store/useStore';
 
 export default function ActividadesScreen() {
   const router = useRouter();
+  const { colors, isDark } = useTheme();
   const activities = useStore((s) => s.activities);
 
   const handleActivityPress = (activity: typeof activities[0]) => {
@@ -58,7 +60,7 @@ export default function ActividadesScreen() {
         {/* Mascot at bottom */}
         <Animated.View entering={FadeInUp.duration(400).delay(500)} style={styles.mascotSection}>
           <Mascot size={90} variant="breathing" />
-          <Text style={styles.mascotText}>
+          <Text style={[styles.mascotText, { color: colors.textLight }]}>
             Elige una actividad y encuentra tu calma interior ✨
           </Text>
         </Animated.View>
@@ -77,7 +79,7 @@ const styles = StyleSheet.create({
     alignItems: 'center', marginTop: 24, gap: 12,
   },
   mascotText: {
-    fontSize: 13, color: Colors.textLight, textAlign: 'center',
+    fontSize: 13, textAlign: 'center',
     fontFamily: 'Poppins_400Regular',
   },
 });

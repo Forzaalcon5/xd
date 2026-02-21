@@ -45,7 +45,7 @@ export function PremiumCard({ children, colors, style, onPress }: PremiumCardPro
     >
       <Animated.View style={animatedStyle}>
         <LinearGradient
-          colors={colors || ['rgba(255,255,255,0.95)', 'rgba(255,255,255,0.85)']}
+          colors={(colors || ['rgba(255,255,255,0.95)', 'rgba(255,255,255,0.85)']) as unknown as readonly [string, string, ...string[]]}
           style={[styles.premiumCard, style]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
@@ -134,7 +134,7 @@ export function FloatingActionButton({ icon, onPress, color }: FABProps) {
     >
       <Animated.View style={animatedStyle}>
         <LinearGradient
-          colors={color || Gradients.jewel}
+          colors={(color || Gradients.jewel) as unknown as readonly [string, string, ...string[]]}
           style={styles.fab}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}

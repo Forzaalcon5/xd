@@ -12,7 +12,9 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { Colors, Gradients } from '../../constants/theme';
-import { JewelButton, Mascot, FloatingParticles } from '../../components/ui';
+import { useTheme } from '../../hooks/useTheme';
+import { JewelButton, Mascot, GlassCard } from '../../components/ui';
+import { ParticlesBackground } from '../../components/ui/ParticlesBackground';
 import { useStore } from '../../store/useStore';
 
 const { width: SCREEN_W } = Dimensions.get('window');
@@ -50,7 +52,9 @@ function FloatingOrb({ delay, color, size, top, left }: {
 
 export default function RegisterScreen() {
   const router = useRouter();
+  const { colors, isDark } = useTheme();
   const login = useStore((s) => s.login);
+  const currentPlan = useStore((s) => s.currentPlan);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -64,7 +68,11 @@ export default function RegisterScreen() {
     setTimeout(() => {
       login(email.trim(), name.trim());
       setLoading(false);
-      router.replace('/(tabs)');
+      if (!currentPlan) {
+        router.replace('/(onboarding)/select-plan');
+      } else {
+        router.replace('/(tabs)');
+      }
     }, 1800);
   };
 
@@ -83,8 +91,8 @@ export default function RegisterScreen() {
     <View style={styles.container}>
       {/* Premium gradient background */}
       <LinearGradient
-        colors={['#E8F0FE', '#F3E8FF', '#FFF0F3', '#E8F4FD']}
-        locations={[0, 0.3, 0.6, 1]}
+        colors={isDark ? ['#0F172A', '#1E1B4B'] : [...Gradients.loginBg]}
+        locations={[0, 1]}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={StyleSheet.absoluteFill}
@@ -96,22 +104,26 @@ export default function RegisterScreen() {
       <FloatingOrb delay={1000} color="rgba(168,230,207,0.12)" size={80} top={SCREEN_W * 0.8} left={20} />
       <FloatingOrb delay={800} color="rgba(247,201,126,0.10)" size={60} top={SCREEN_W * 0.5} left={SCREEN_W - 40} />
 
-      <FloatingParticles count={5} />
+      <ParticlesBackground count={15} />
 
       {/* Loading Overlay */}
       {loading && (
         <Animated.View
           entering={FadeIn.duration(200)}
           exiting={FadeOut.duration(200)}
-          style={styles.loadingOverlay}
+          style={[styles.loadingOverlay, { backgroundColor: isDark ? 'rgba(15,23,42,0.8)' : 'rgba(232,240,254,0.8)' }]}
         >
-          <Animated.View entering={ZoomIn.springify().damping(12)} style={styles.loadingCard}>
-            <Mascot size={90} variant="happy" />
-            <View style={styles.loadingDots}>
-              <ActivityIndicator size="small" color={Colors.primary} />
-            </View>
-            <Text style={styles.loadingTitle}>¡Bienvenido/a, {name}!</Text>
-            <Text style={styles.loadingSubtext}>Preparando tu espacio seguro...</Text>
+          <Animated.View entering={FadeInUp.duration(400)}>
+            <GlassCard style={styles.loadingCard}>
+              <View style={{ alignItems: 'center' }}>
+                <Mascot size={90} variant="happy" />
+                <View style={styles.loadingDots}>
+                  <ActivityIndicator size="small" color={colors.primary} />
+                </View>
+                <Text style={[styles.loadingTitle, { color: colors.textPrimary }]}>¡Bienvenido/a, {name || 'amigo'}!</Text>
+                <Text style={[styles.loadingSubtext, { color: colors.textLight }]}>Preparando tu espacio seguro...</Text>
+              </View>
+            </GlassCard>
           </Animated.View>
         </Animated.View>
       )}
@@ -127,8 +139,8 @@ export default function RegisterScreen() {
         >
           {/* Back button */}
           <Animated.View entering={FadeIn.duration(300)} style={styles.backRow}>
-            <Pressable onPress={() => router.back()} style={styles.backBtn}>
-              <Ionicons name="arrow-back" size={20} color={Colors.textPrimary} />
+            <Pressable onPress={() => router.back()} style={[styles.backBtn, { backgroundColor: isDark ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.85)' }]}>
+              <Ionicons name="arrow-back" size={20} color={colors.textPrimary} />
             </Pressable>
           </Animated.View>
 
@@ -139,8 +151,8 @@ export default function RegisterScreen() {
 
           {/* Title */}
           <Animated.View entering={FadeInUp.duration(400).delay(200)} style={styles.titleSection}>
-            <Text style={styles.title}>Crea tu cuenta</Text>
-            <Text style={styles.subtitle}>
+            <Text style={[styles.title, { color: colors.textPrimary }]}>Crea tu cuenta</Text>
+            <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
               Tu espacio seguro para crecer emocionalmente 💙
             </Text>
           </Animated.View>
@@ -160,26 +172,29 @@ export default function RegisterScreen() {
           </Animated.View>
 
           {/* Form Card */}
-          <Animated.View entering={FadeInUp.duration(500).delay(400)} style={styles.formCard}>
+          <Animated.View entering={FadeInUp.duration(500).delay(400)}>
+            <GlassCard style={styles.formCard}>
             {/* Decorative top gradient line */}
             <LinearGradient
-              colors={[Colors.primary, Colors.secondary, Colors.mint]}
+              colors={[colors.primary, colors.secondary, Colors.mint]}
               start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
               style={styles.formTopLine}
             />
 
             {/* Name Input */}
             <View style={[
-              styles.inputWrap,
-              focusedField === 'name' && styles.inputFocused,
+              styles.inputWrap, 
+              { 
+                backgroundColor: isDark ? 'rgba(255,255,255,0.02)' : '#F7FAFC',
+                borderColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)'
+              },
+              focusedField === 'name' && { borderColor: colors.primary + '40' },
             ]}>
-              <View style={[styles.inputIconWrap, { backgroundColor: Colors.primary + '12' }]}>
-                <Ionicons name="person-outline" size={18} color={Colors.primary} />
-              </View>
+              <Ionicons name="person-outline" size={20} color={colors.textLight} style={styles.inputIcon} />
               <TextInput
-                style={styles.input}
+                style={[styles.input, { color: colors.textPrimary }]}
                 placeholder="¿Cómo te llamas?"
-                placeholderTextColor={Colors.textLight}
+                placeholderTextColor={colors.textLight}
                 value={name}
                 onChangeText={setName}
                 autoCapitalize="words"
@@ -193,16 +208,18 @@ export default function RegisterScreen() {
 
             {/* Email Input */}
             <View style={[
-              styles.inputWrap,
-              focusedField === 'email' && styles.inputFocused,
+              styles.inputWrap, 
+              { 
+                backgroundColor: isDark ? 'rgba(255,255,255,0.02)' : '#F7FAFC',
+                borderColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)'
+              },
+              focusedField === 'email' && { borderColor: colors.primary + '40' },
             ]}>
-              <View style={[styles.inputIconWrap, { backgroundColor: Colors.secondary + '12' }]}>
-                <Ionicons name="mail-outline" size={18} color={Colors.secondary} />
-              </View>
+              <Ionicons name="mail-outline" size={20} color={colors.textLight} style={styles.inputIcon} />
               <TextInput
-                style={styles.input}
+                style={[styles.input, { color: colors.textPrimary }]}
                 placeholder="Correo electrónico"
-                placeholderTextColor={Colors.textLight}
+                placeholderTextColor={colors.textLight}
                 value={email}
                 onChangeText={setEmail}
                 keyboardType="email-address"
@@ -218,16 +235,18 @@ export default function RegisterScreen() {
             {/* Password Input */}
             <View>
               <View style={[
-                styles.inputWrap,
-                focusedField === 'password' && styles.inputFocused,
+                styles.inputWrap, 
+                { 
+                  backgroundColor: isDark ? 'rgba(255,255,255,0.02)' : '#F7FAFC',
+                  borderColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)'
+                },
+                focusedField === 'password' && { borderColor: colors.primary + '40' },
               ]}>
-                <View style={[styles.inputIconWrap, { backgroundColor: Colors.mint + '18' }]}>
-                  <Ionicons name="lock-closed-outline" size={18} color={Colors.mint} />
-                </View>
+                <Ionicons name="lock-closed-outline" size={20} color={colors.textLight} style={styles.inputIcon} />
                 <TextInput
-                  style={styles.input}
+                  style={[styles.input, { color: colors.textPrimary }]}
                   placeholder="Contraseña"
-                  placeholderTextColor={Colors.textLight}
+                  placeholderTextColor={colors.textLight}
                   value={password}
                   onChangeText={setPassword}
                   secureTextEntry={!showPassword}
@@ -238,7 +257,7 @@ export default function RegisterScreen() {
                   <Ionicons
                     name={showPassword ? 'eye-off-outline' : 'eye-outline'}
                     size={20}
-                    color={Colors.textLight}
+                    color={colors.textLight}
                   />
                 </Pressable>
               </View>
@@ -272,21 +291,22 @@ export default function RegisterScreen() {
               icon="sparkles-outline"
               style={{ marginTop: 4 }}
             />
+            </GlassCard>
           </Animated.View>
 
           {/* Privacy note */}
           <Animated.View entering={FadeInUp.duration(400).delay(500)} style={styles.privacyWrap}>
-            <Ionicons name="shield-checkmark-outline" size={14} color={Colors.textLight} />
-            <Text style={styles.privacyText}>
+            <Ionicons name="shield-checkmark-outline" size={14} color={colors.textLight} />
+            <Text style={[styles.privacyText, { color: colors.textLight }]}>
               Tus datos están seguros. No compartimos tu información.
             </Text>
           </Animated.View>
 
           {/* Login link */}
           <Animated.View entering={FadeInUp.duration(400).delay(600)} style={styles.loginSection}>
-            <Text style={styles.loginText}>¿Ya tienes cuenta? </Text>
+            <Text style={[styles.loginText, { color: colors.textSecondary }]}>¿Ya tienes cuenta? </Text>
             <Pressable onPress={() => router.back()}>
-              <Text style={styles.loginLink}>Iniciar Sesión</Text>
+              <Text style={[styles.loginLink, { color: colors.primary }]}>Iniciar Sesión</Text>
             </Pressable>
           </Animated.View>
         </ScrollView>
@@ -312,27 +332,20 @@ const styles = StyleSheet.create({
   // Loading
   loadingOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(232,240,254,0.9)',
     justifyContent: 'center', alignItems: 'center',
     zIndex: 100,
   },
   loadingCard: {
-    backgroundColor: '#FFF',
     borderRadius: 32, paddingVertical: 36, paddingHorizontal: 40,
     alignItems: 'center',
-    shadowColor: '#5B9BD5',
-    shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 0.12,
-    shadowRadius: 32,
-    elevation: 10,
   },
   loadingDots: { marginTop: 16 },
   loadingTitle: {
-    marginTop: 14, fontSize: 18, fontWeight: '700', color: Colors.textPrimary,
+    marginTop: 14, fontSize: 18, fontWeight: '700',
     fontFamily: 'Poppins_700Bold',
   },
   loadingSubtext: {
-    marginTop: 4, fontSize: 13, color: Colors.textLight,
+    marginTop: 4, fontSize: 13,
     fontFamily: 'Poppins_400Regular',
   },
   // Mascot
@@ -377,19 +390,15 @@ const styles = StyleSheet.create({
     height: 3, borderTopLeftRadius: 28, borderTopRightRadius: 28,
   },
   inputWrap: {
-    flexDirection: 'row', alignItems: 'center', gap: 10,
-    backgroundColor: 'rgba(0,0,0,0.02)',
-    borderRadius: 16, paddingHorizontal: 12, paddingVertical: 2,
-    borderWidth: 1.5, borderColor: 'rgba(0,0,0,0.04)',
+    flexDirection: 'row', alignItems: 'center',
+    borderRadius: 16, paddingHorizontal: 16,
+    height: 56,
+    borderWidth: 1, borderColor: 'rgba(0,0,0,0.05)',
   },
   inputFocused: {
     borderColor: Colors.primary + '40',
-    backgroundColor: Colors.primary + '04',
   },
-  inputIconWrap: {
-    width: 34, height: 34, borderRadius: 10,
-    justifyContent: 'center', alignItems: 'center',
-  },
+  inputIcon: { marginRight: 12 },
   input: {
     flex: 1, height: 50, fontSize: 14, color: Colors.textPrimary,
     fontFamily: 'Poppins_400Regular',
