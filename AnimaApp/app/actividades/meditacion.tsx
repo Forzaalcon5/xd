@@ -1,8 +1,8 @@
-import React, { useEffect } from 'react';
-import { View, Text, StyleSheet, Pressable, Dimensions } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, StyleSheet, Pressable, Dimensions, Modal } from 'react-native';
 import Animated, { 
   useSharedValue, useAnimatedStyle, withRepeat, withTiming, 
-  withSequence, Easing, FadeIn 
+  withSequence, Easing, FadeIn, FadeInUp 
 } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -11,13 +11,14 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Colors, Gradients } from '../../constants/theme';
 import { useTheme } from '../../hooks/useTheme';
 import { ScreenWrapper } from '../../components/ScreenWrapper';
-import { JewelButton } from '../../components/ui';
+import { useStore } from '../../store/useStore';
 
 const { width } = Dimensions.get('window');
 
 export default function MeditacionScreen() {
   const router = useRouter();
   const { colors, isDark } = useTheme();
+  const addCompletedActivity = useStore((s) => s.addCompletedActivity);
 
   // Animation values
   const orbScale = useSharedValue(1);
@@ -25,9 +26,28 @@ export default function MeditacionScreen() {
   const ringScale = useSharedValue(1);
   const ringOpacity = useSharedValue(0.5);
 
-  const [instruction, setInstruction] = React.useState('Enfoca tu atención...');
+  const [instruction, setInstruction] = useState('Enfoca tu atención...');
+  const [isActive, setIsActive] = useState(false);
+  const [timeLeft, setTimeLeft] = useState(180); // 3 mins
+  const [showSuccess, setShowSuccess] = useState(false);
+
+  // Timer countdown hook
+  useEffect(() => {
+    let interval: any;
+    if (isActive && timeLeft > 0) {
+      interval = setInterval(() => setTimeLeft((prev) => prev - 1), 1000);
+    } else if (isActive && timeLeft === 0) {
+      setIsActive(false);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      addCompletedActivity('Meditación Breve', 'meditacion');
+      setShowSuccess(true);
+    }
+    return () => clearInterval(interval);
+  }, [isActive, timeLeft]);
 
   useEffect(() => {
+    // Start automatically when opening the screen
+    setIsActive(true);
     // Slower, hypnotic visual (6s cycle)
     const duration = 6000;
     
@@ -159,6 +179,9 @@ export default function MeditacionScreen() {
 
       <View style={styles.content}>
         <Animated.View entering={FadeIn.duration(1000)} style={styles.textContainer}>
+          <Text style={[styles.timerText, { color: Colors.dreamText }]}>
+            {Math.floor(timeLeft / 60)}:{(timeLeft % 60).toString().padStart(2, '0')}
+          </Text>
           <Text key={instruction} style={styles.instruction}>
             {instruction}
           </Text>
@@ -187,6 +210,28 @@ export default function MeditacionScreen() {
         {/* Bottom space */}
         <View style={{ height: 100 }} />
       </View>
+
+      {/* Success Modal */}
+      <Modal visible={showSuccess} transparent animationType="fade">
+        <View style={styles.modalOverlay}>
+          <Animated.View entering={FadeInUp.duration(400)} style={[styles.modalContent, { backgroundColor: colors.bgCard }]}>
+            <View style={styles.successIconWrap}>
+              <Ionicons name="checkmark-circle" size={72} color={Colors.mint} />
+            </View>
+            <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>¡Excelente Trabajo!</Text>
+            <Text style={[styles.modalText, { color: colors.textSecondary }]}>
+              Has completado tus 3 minutos de meditación. Tu mente y cuerpo te lo agradecen profundamente.
+            </Text>
+            <Pressable 
+              style={[styles.doneBtn, { backgroundColor: Colors.mint }]} 
+              onPress={() => { setShowSuccess(false); router.back(); }}
+            >
+              <Text style={styles.doneBtnText}>Terminar</Text>
+            </Pressable>
+          </Animated.View>
+        </View>
+      </Modal>
+
     </ScreenWrapper>
   );
 }
@@ -241,5 +286,33 @@ const styles = StyleSheet.create({
     position: 'absolute', width: 220, height: 220, borderRadius: 110,
     borderWidth: 1, borderColor: '#A78BFA', opacity: 0.3,
     top: 40, left: 40, 
+  },
+  timerText: {
+    fontSize: 24, fontWeight: '700', fontFamily: 'Poppins_700Bold',
+    textAlign: 'center', marginBottom: 8, fontVariant: ['tabular-nums'],
+  },
+  // Modal Styles
+  modalOverlay: {
+    flex: 1, backgroundColor: 'rgba(0,0,0,0.6)',
+    justifyContent: 'center', alignItems: 'center', padding: 20,
+  },
+  modalContent: {
+    width: '100%', borderRadius: 24, padding: 30, alignItems: 'center',
+    shadowColor: '#000', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.15, shadowRadius: 20, elevation: 15,
+  },
+  successIconWrap: {
+    marginBottom: 20,
+  },
+  modalTitle: {
+    fontSize: 22, fontWeight: '700', fontFamily: 'Poppins_700Bold', marginBottom: 12, textAlign: 'center',
+  },
+  modalText: {
+    fontSize: 15, fontFamily: 'Poppins_400Regular', textAlign: 'center', lineHeight: 22, marginBottom: 30,
+  },
+  doneBtn: {
+    width: '100%', paddingVertical: 16, borderRadius: 16, alignItems: 'center',
+  },
+  doneBtnText: {
+    color: '#FFF', fontSize: 16, fontWeight: '600', fontFamily: 'Poppins_600SemiBold',
   },
 });

@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { SoundService } from '../utils/SoundService';
+import { NotificationService } from '../utils/NotificationService';
 
 export type MoodType = 'animado' | 'mejor' | 'neutral' | 'triste' | 'muy_triste';
 
@@ -17,6 +18,7 @@ export interface MoodEntry {
   mood: MoodType;
   date: string;
   label: string;
+  note?: string;
 }
 
 export interface Activity {
@@ -43,9 +45,11 @@ interface AppState {
   userName: string;
   userEmail: string;
   showSplash: boolean;
+  notificationsEnabled: boolean;
   
   // Plan (Emotional Route)
   currentPlan: string | null;
+  recommendedPlan: string | null; // Resultado del triage temporal
   
   // Mood
   currentMood: MoodType | null;
@@ -68,13 +72,16 @@ interface AppState {
   updateUser: (name: string) => void;
   logout: () => void;
   hideSplash: () => void;
+  toggleNotifications: (enabled: boolean) => void;
   setPlan: (planId: string) => void;
+  setRecommendedPlan: (planId: string | null) => void;
   setMood: (mood: MoodType) => void;
-  saveMoodEntry: () => void;
+  saveMoodEntry: (note?: string) => void;
   sendMessage: (text: string) => void;
   addJournalEntry: (entry: JournalEntry) => void;
   removeJournalEntry: (id: string) => void;
   updateJournalEntry: (id: string, text: string) => void;
+  addCompletedActivity: (title: string, type: string) => void;
 }
 
 const BOT_RESPONSES: Record<string, string[]> = {
@@ -132,9 +139,11 @@ export const useStore = create<AppState>()(
       userName: '',
       userEmail: '',
       showSplash: true,
+      notificationsEnabled: true,
       
       // Plan
       currentPlan: null,
+      recommendedPlan: null,
       
       // Mood
       currentMood: null,
@@ -171,9 +180,16 @@ export const useStore = create<AppState>()(
         set({ isAuthenticated: false, userName: '', userEmail: '', messages: [], currentPlan: null });
       },
       hideSplash: () => set({ showSplash: false }),
+      toggleNotifications: (enabled: boolean) => {
+        set({ notificationsEnabled: enabled });
+        if (!enabled) {
+          NotificationService.cancelAllScheduledNotifications();
+        }
+      },
       setPlan: (planId) => set({ currentPlan: planId }),
+      setRecommendedPlan: (planId) => set({ recommendedPlan: planId }),
       setMood: (mood) => set({ currentMood: mood }),
-      saveMoodEntry: () => {
+      saveMoodEntry: (note?: string) => {
         const { currentMood, moodHistory } = get();
         if (!currentMood) return;
         const labels: Record<MoodType, string> = {
@@ -183,8 +199,9 @@ export const useStore = create<AppState>()(
         const newEntry: MoodEntry = {
           id: Date.now().toString(),
           mood: currentMood,
-          date: 'Hoy',
+          date: new Date().toISOString(),
           label: labels[currentMood],
+          note,
         };
 
         // Calculate score (1-5)
@@ -242,6 +259,24 @@ export const useStore = create<AppState>()(
           ),
         }));
       },
+      addCompletedActivity: (title: string, type: string) => {
+        const { recentActivities } = get();
+        // Determine icon/color based on type
+        let icon = 'checkmark-circle-outline';
+        let color = '#38B2AC'; // Mint
+        if (type === 'respiracion') { icon = 'water-outline'; color = '#87CEEB'; }
+        if (type === 'meditacion') { icon = 'sparkles-outline'; color = '#A8E6CF'; }
+        
+        const newActivity = {
+          title,
+          time: 'Recién',
+          detail: 'Completado',
+          icon,
+          color,
+        };
+        // Keep only top 5 recent activities to avoid endless list
+        set({ recentActivities: [newActivity, ...recentActivities].slice(0, 5) });
+      },
     }),
     {
       name: 'anima-app-storage',
@@ -251,6 +286,7 @@ export const useStore = create<AppState>()(
         isAuthenticated: state.isAuthenticated,
         userName: state.userName,
         userEmail: state.userEmail,
+        notificationsEnabled: state.notificationsEnabled,
         currentPlan: state.currentPlan,
         moodHistory: state.moodHistory,
         weeklyMoodData: state.weeklyMoodData,

@@ -1,10 +1,10 @@
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView, Dimensions } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, ScrollView, Dimensions, Pressable, Modal, TextInput, KeyboardAvoidingView, Platform } from 'react-native';
 import Animated, { FadeInUp, FadeIn } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Gradients, MoodConfig } from '../../constants/theme';
-import { GlassCard, SectionHeader, Mascot, FloatingParticles } from '../../components/ui';
+import { GlassCard, SectionHeader, Mascot, FloatingParticles, JewelButton } from '../../components/ui';
 import { ScreenWrapper } from '../../components/ScreenWrapper';
 import { useTheme } from '../../hooks/useTheme';
 import { useStore, MoodType } from '../../store/useStore';
@@ -56,12 +56,28 @@ function getStreak(history: any[]): number {
 }
 
 export default function RegistroScreen() {
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const moodHistory = useStore((s) => s.moodHistory);
   const journalEntries = useStore((s) => s.journalEntries) ?? [];
   const recentActivities = useStore((s) => s.recentActivities);
+  const setMood = useStore((s) => s.setMood);
+  const saveMoodEntry = useStore((s) => s.saveMoodEntry);
   const streak = getStreak(moodHistory);
   const isEmpty = moodHistory.length === 0 && journalEntries.length === 0;
+
+  const [showLogModal, setShowLogModal] = useState(false);
+  const [selectedMood, setSelectedMood] = useState<MoodType | null>(null);
+  const [journalNote, setJournalNote] = useState('');
+
+  const handleSaveLog = () => {
+    if (selectedMood) {
+      setMood(selectedMood);
+      saveMoodEntry(journalNote.trim() || undefined);
+      setShowLogModal(false);
+      setJournalNote('');
+      setSelectedMood(null);
+    }
+  };
 
   // Get most frequent mood
   const getMostFrequentMood = () => {
@@ -195,7 +211,10 @@ export default function RegistroScreen() {
                       </View>
                       <View style={{ flex: 1, gap: 2 }}>
                         <Text style={[styles.timelineLabel, { color: colors.textPrimary }]}>{entry.label}</Text>
-                        <Text style={[styles.timelineDate, { color: colors.textLight }]}>{entry.date}</Text>
+                        <Text style={[styles.timelineDate, { color: colors.textLight }]}>{new Date(entry.date).toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' })}</Text>
+                        {!!entry.note && (
+                          <Text style={[styles.timelineNote, { color: colors.textSecondary }]}>{entry.note}</Text>
+                        )}
                       </View>
                       <View style={[styles.timelineMoodTag, { backgroundColor: (config?.color || '#B8C4D0') + '12' }]}>
                         <Text style={[styles.timelineMoodTagText, { color: config?.color }]}>
@@ -237,6 +256,78 @@ export default function RegistroScreen() {
 
         <View style={{ height: 100 }} />
       </ScrollView>
+
+      {/* Floating Action Button */}
+      <Animated.View entering={FadeInUp.duration(400).delay(500)} style={styles.fabContainer}>
+        <Pressable 
+          style={({ pressed }) => [styles.fab, pressed && { opacity: 0.8, transform: [{ scale: 0.95 }] }]}
+          onPress={() => setShowLogModal(true)}
+        >
+          <LinearGradient colors={[Colors.primary, Colors.secondary]} style={styles.fabGradient}>
+            <Ionicons name="add" size={32} color="#FFF" />
+          </LinearGradient>
+        </Pressable>
+      </Animated.View>
+
+      {/* Log Your Day Modal */}
+      <Modal visible={showLogModal} transparent animationType="slide" onRequestClose={() => setShowLogModal(false)}>
+        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { backgroundColor: colors.bgCard }]}>
+            <View style={styles.modalHeader}>
+              <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>¿Cómo te sientes hoy?</Text>
+              <Pressable onPress={() => setShowLogModal(false)}>
+                <Ionicons name="close" size={24} color={colors.textLight} />
+              </Pressable>
+            </View>
+
+            {/* Mood Selector Grid */}
+            <View style={styles.moodGrid}>
+              {(Object.keys(MoodConfig) as MoodType[]).map((moodKey) => {
+                const isSelected = selectedMood === moodKey;
+                const config = MoodConfig[moodKey];
+                return (
+                  <Pressable 
+                    key={moodKey} 
+                    style={[styles.moodBox, isSelected && { backgroundColor: config.color + '20', borderColor: config.color }]}
+                    onPress={() => setSelectedMood(moodKey)}
+                  >
+                    <Ionicons name={(config.icon || 'ellipse') as any} size={28} color={config.color} />
+                    <Text style={[styles.moodLabel, { color: colors.textSecondary }, isSelected && { color: config.color, fontWeight: '600' }]}>{config.label}</Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+
+            {/* Note Input */}
+            <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>Reflexión del día (opcional)</Text>
+            <TextInput
+              style={[
+                styles.input, 
+                { 
+                  backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#F7FAFC',
+                  color: colors.textPrimary,
+                  borderColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'
+                }
+              ]}
+              placeholder="¿Qué hizo que te sintieras así hoy?"
+              placeholderTextColor={colors.textLight}
+              multiline
+              numberOfLines={3}
+              textAlignVertical="top"
+              value={journalNote}
+              onChangeText={setJournalNote}
+            />
+
+            <JewelButton 
+              title="Guardar Registro" 
+              onPress={handleSaveLog} 
+              style={{ marginTop: 24, opacity: selectedMood ? 1 : 0.5 }}
+              disabled={!selectedMood}
+            />
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
+
     </ScreenWrapper>
   );
 }
@@ -385,5 +476,57 @@ const styles = StyleSheet.create({
   emptyStepText: {
     fontSize: 13, color: Colors.textSecondary,
     fontFamily: 'Poppins_500Medium',
+  },
+  timelineNote: {
+    fontSize: 12, marginTop: 4, fontFamily: 'Poppins_400Regular', fontStyle: 'italic', lineHeight: 18,
+  },
+
+  // FAB
+  fabContainer: {
+    position: 'absolute', bottom: 24, right: 24,
+    shadowColor: Colors.primary, shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.3, shadowRadius: 12, elevation: 8,
+  },
+  fab: {
+    width: 60, height: 60, borderRadius: 30, overflow: 'hidden',
+  },
+  fabGradient: {
+    flex: 1, justifyContent: 'center', alignItems: 'center',
+  },
+
+  // Modal
+  modalOverlay: {
+    flex: 1, backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: '#FFF',
+    borderTopLeftRadius: 32, borderTopRightRadius: 32,
+    padding: 24, paddingBottom: 40,
+  },
+  modalHeader: {
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20,
+  },
+  modalTitle: {
+    fontSize: 20, fontWeight: '700', fontFamily: 'Poppins_700Bold',
+  },
+  moodGrid: {
+    flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', marginBottom: 24, gap: 10,
+  },
+  moodBox: {
+    width: '30%', aspectRatio: 1, borderRadius: 16,
+    borderWidth: 2, borderColor: 'transparent',
+    justifyContent: 'center', alignItems: 'center', gap: 8,
+    backgroundColor: 'rgba(150,150,150,0.05)',
+  },
+  moodLabel: {
+    fontSize: 12, fontFamily: 'Poppins_500Medium',
+  },
+  inputLabel: {
+    fontSize: 14, fontFamily: 'Poppins_500Medium', marginBottom: 8,
+  },
+  input: {
+    borderRadius: 16, padding: 16, fontSize: 15,
+    borderWidth: 1, minHeight: 100,
+    fontFamily: 'Poppins_400Regular',
   },
 });

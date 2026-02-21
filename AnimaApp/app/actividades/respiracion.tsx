@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, Pressable, Image } from 'react-native';
+import { View, Text, StyleSheet, Pressable, Image, Modal } from 'react-native';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -17,6 +17,7 @@ import { AuroraBackground } from '../../components/ui';
 import { SoundService } from '../../utils/SoundService';
 import { ScreenWrapper } from '../../components/ScreenWrapper'; // ADDED
 import { useTheme } from '../../hooks/useTheme'; // ADDED
+import { useStore } from '../../store/useStore';
 
 const mascotImage = require('../../assets/images/mascot/respirando.png');
 
@@ -29,11 +30,30 @@ const PHASES = [
 
 export default function RespiracionScreen() {
   const { colors, isDark } = useTheme(); // NEW
+  const addCompletedActivity = useStore((s) => s.addCompletedActivity);
+  
   const [isActive, setIsActive] = useState(false);
   const [phaseIndex, setPhaseIndex] = useState(0);
+  const [timeLeft, setTimeLeft] = useState(180); // 3 minutes (180 seconds)
+  const [showSuccess, setShowSuccess] = useState(false);
+
   const mascotScale = useSharedValue(0.85);
   const mascotOpacity = useSharedValue(0.6);
   const ringScale = useSharedValue(1);
+
+  // Timer countdown hook
+  useEffect(() => {
+    let interval: ReturnType<typeof setInterval>;
+    if (isActive && timeLeft > 0) {
+      interval = setInterval(() => setTimeLeft((prev) => prev - 1), 1000);
+    } else if (isActive && timeLeft === 0) {
+      setIsActive(false);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      addCompletedActivity('Respiración Guiada', 'respiracion');
+      setShowSuccess(true);
+    }
+    return () => clearInterval(interval);
+  }, [isActive, timeLeft]);
 
   useEffect(() => {
     if (!isActive) return;
@@ -109,6 +129,9 @@ export default function RespiracionScreen() {
 
       {/* Instruction Text */}
       <Animated.View entering={FadeInDown.duration(400).delay(100)} style={styles.instructionWrap}>
+        <Text style={[styles.timerText, { color: colors.textPrimary }]}>
+          {Math.floor(timeLeft / 60)}:{(timeLeft % 60).toString().padStart(2, '0')}
+        </Text>
         <Text style={[styles.instructionText, { color: colors.textSecondary }]}>
           Respira junto a Aníma. Sigue el ritmo visual para relajarte. 🍃
         </Text>
@@ -162,6 +185,28 @@ export default function RespiracionScreen() {
       </Animated.View>
 
       <View style={{ height: 40 }} />
+
+      {/* Success Modal */}
+      <Modal visible={showSuccess} transparent animationType="fade">
+        <View style={styles.modalOverlay}>
+          <Animated.View entering={FadeInUp.duration(400)} style={[styles.modalContent, { backgroundColor: colors.bgCard }]}>
+            <View style={styles.successIconWrap}>
+              <Ionicons name="checkmark-circle" size={72} color={Colors.mint} />
+            </View>
+            <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>¡Excelente Trabajo!</Text>
+            <Text style={[styles.modalText, { color: colors.textSecondary }]}>
+              Has completado tus 3 minutos de respiración. Tu mente y cuerpo te lo agradecen profundamente.
+            </Text>
+            <Pressable 
+              style={[styles.doneBtn, { backgroundColor: Colors.mint }]} 
+              onPress={() => { setShowSuccess(false); router.back(); }}
+            >
+              <Text style={styles.doneBtnText}>Terminar</Text>
+            </Pressable>
+          </Animated.View>
+        </View>
+      </Modal>
+
     </ScreenWrapper>
   );
 }
@@ -222,5 +267,33 @@ const styles = StyleSheet.create({
   },
   controlText: {
     color: '#FFF', fontSize: 16, fontWeight: '700', fontFamily: 'Poppins_600SemiBold',
+  },
+  timerText: {
+    fontSize: 32, fontWeight: '700', fontFamily: 'Poppins_700Bold',
+    textAlign: 'center', marginBottom: 4, fontVariant: ['tabular-nums'],
+  },
+  // Modal Styles
+  modalOverlay: {
+    flex: 1, backgroundColor: 'rgba(0,0,0,0.6)',
+    justifyContent: 'center', alignItems: 'center', padding: 20,
+  },
+  modalContent: {
+    width: '100%', borderRadius: 24, padding: 30, alignItems: 'center',
+    shadowColor: '#000', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.15, shadowRadius: 20, elevation: 15,
+  },
+  successIconWrap: {
+    marginBottom: 20,
+  },
+  modalTitle: {
+    fontSize: 22, fontWeight: '700', fontFamily: 'Poppins_700Bold', marginBottom: 12, textAlign: 'center',
+  },
+  modalText: {
+    fontSize: 15, fontFamily: 'Poppins_400Regular', textAlign: 'center', lineHeight: 22, marginBottom: 30,
+  },
+  doneBtn: {
+    width: '100%', paddingVertical: 16, borderRadius: 16, alignItems: 'center',
+  },
+  doneBtnText: {
+    color: '#FFF', fontSize: 16, fontWeight: '600', fontFamily: 'Poppins_600SemiBold',
   },
 });

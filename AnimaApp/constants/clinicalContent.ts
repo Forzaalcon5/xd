@@ -1,4 +1,4 @@
-export type EmotionalRouteId = 'renacer' | 'autocompasion' | 'balance' | 'descubrimiento';
+export type EmotionalRouteId = 'renacer' | 'autocompasion' | 'balance' | 'descubrimiento' | 'soledad';
 
 export interface EmotionalRoute {
   id: EmotionalRouteId;
@@ -113,6 +113,31 @@ export const EMOTIONAL_ROUTES: EmotionalRoute[] = [
       'La culpa solo es útil si te mueve a reparar; suéltala si solo te paraliza. 🎈',
       'Todos caminamos en la niebla alguna vez. Tómate tu tiempo para que aclare. 🌫️',
       'Tus habilidades y pasiones siguen ahí, solo esperan ser redescrubiertas y pulidas.',
+    ]
+  },
+  {
+    id: 'soledad',
+    title: 'Ruta de la Soledad',
+    subtitle: 'Sensación de aislamiento',
+    description: 'Aprenderemos a diferenciar entre estar solo y sentirse solo, fomentando la reconexión gradual empezando por uno mismo.',
+    icon: 'planet-outline',
+    color: '#818CF8', // Soft Indigo / Cosmic Purple
+    image: require('../assets/images/Soledad.jpeg'),
+    focusArea: 'Valores Sociales y Reestructuración',
+    strategies: [
+      'Identificar la diferencia entre aislamiento y soledad',
+      'Contactar a alguien, aunque sea con un mensaje corto',
+      'Programar tiempo de calidad a solas (autocuidado activo)',
+      'Buscar espacios comunitarios sin presión de interactuar',
+    ],
+    dailyQuotes: [
+      'Tu valía no se mide por la cantidad de mensajes en tu teléfono hoy. 🌌',
+      'Sentirse solo es una tormenta pasajera, no una sentencia permanente. ☔',
+      'Aprende a ser tu propio refugio protector antes de buscarlo afuera. 🏕️',
+      'Un pequeño mensaje a un conocido es un paso gigante contra el aislamiento. 📱',
+      'Estar a solas puede ser el regalo más hermoso si te tratas con compasión. 🎁',
+      'No estás roto(a) por sentir que no encajas a veces. Eres humano. ❤️‍🩹',
+      'Hoy, ve a una cafetería o parque y déjate acompañar por la presencia del mundo. ☕',
     ]
   },
 ];

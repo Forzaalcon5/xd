@@ -4,12 +4,12 @@
     "slug": "animaapp",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
+    "icon": "./assets/images/mascot/respirando.png",
     "scheme": "animaapp",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "splash": {
-      "image": "./assets/images/splash-icon.png",
+      "image": "./assets/images/mascot/respirando.png",
       "resizeMode": "contain",
       "backgroundColor": "#E8F4FD"
     },
@@ -19,7 +19,7 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/adaptive-icon.png",
+        "foregroundImage": "./assets/images/mascot/respirando.png",
         "backgroundColor": "#E8F4FD"
       },
       "package": "com.anima.app"
@@ -27,11 +27,18 @@
     "web": {
       "bundler": "metro",
       "output": "static",
-      "favicon": "./assets/images/favicon.png"
+      "favicon": "./assets/images/mascot/respirando.png"
     },
     "plugins": [
       "expo-router",
-      "expo-font"
+      "expo-font",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/images/mascot/respirando.png",
+          "color": "#C8B6FF"
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true

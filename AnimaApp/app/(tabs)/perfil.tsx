@@ -10,6 +10,7 @@ import { ScreenWrapper } from '../../components/ScreenWrapper';
 import { useStore, MoodType } from '../../store/useStore';
 import { useTheme } from '../../hooks/useTheme';
 import { SoundService } from '../../utils/SoundService'; 
+import { NotificationService } from '../../utils/NotificationService';
 
 export default function PerfilScreen() {
   const router = useRouter();
@@ -18,9 +19,15 @@ export default function PerfilScreen() {
   const moodHistory = useStore((s) => s.moodHistory);
   const logout = useStore((s) => s.logout);
   const updateUser = useStore((s) => s.updateUser);
+  const notificationsEnabled = useStore((s) => s.notificationsEnabled);
+  const toggleNotifications = useStore((s) => s.toggleNotifications);
 
   const [isEditing, setIsEditing] = useState(false);
   const [newName, setNewName] = useState('');
+  
+  const [showPrivacy, setShowPrivacy] = useState(false);
+  const [showInvite, setShowInvite] = useState(false);
+  const [showHelp, setShowHelp] = useState(false);
 
   const handleLogout = () => {
     Alert.alert('Cerrar Sesión', '¿Seguro que quieres salir?', [
@@ -52,11 +59,15 @@ export default function PerfilScreen() {
   };
 
   const settingsItems = [
-    { icon: 'notifications-outline', label: 'Notificaciones', color: colors.primary, type: 'toggle', action: () => {} },
-    { icon: 'moon-outline', label: 'Modo Lunar', color: colors.secondary, type: 'toggle', action: toggleTheme },
-    { icon: 'shield-checkmark-outline', label: 'Privacidad y Datos', color: colors.mint, type: 'link' },
-    { icon: 'heart-outline', label: 'Invitar amigos', color: colors.accent, type: 'link' },
-    { icon: 'help-buoy-outline', label: 'Ayuda y Soporte', color: colors.textLight, type: 'link' },
+    { icon: 'notifications-outline', label: 'Notificaciones', color: colors.primary, type: 'toggle', action: () => toggleNotifications(!notificationsEnabled), active: notificationsEnabled },
+    { icon: 'alert-circle-outline', label: 'Probar Notificación', color: colors.accent, type: 'link', action: async () => { 
+        Alert.alert('¡Prueba iniciada!', 'Sal de la app ahora. La notificación llegará en 5 segundos.');
+        await NotificationService.scheduleTestNotification(); 
+    } },
+    { icon: 'moon-outline', label: 'Modo Lunar', color: colors.secondary, type: 'toggle', action: toggleTheme, active: isDark },
+    { icon: 'shield-checkmark-outline', label: 'Privacidad y Datos', color: colors.mint, type: 'link', action: () => setShowPrivacy(true) },
+    { icon: 'heart-outline', label: 'Invitar amigos', color: colors.accent, type: 'link', action: () => setShowInvite(true) },
+    { icon: 'help-buoy-outline', label: 'Ayuda y Soporte', color: colors.textLight, type: 'link', action: () => setShowHelp(true) },
   ];
 
   return (
@@ -126,10 +137,10 @@ export default function PerfilScreen() {
                 
                 {item.type === 'toggle' ? (
                    <View style={[styles.toggleTrack, { 
-                     backgroundColor: (item.label === 'Modo Lunar' && isDark) ? Colors.primary : (isDark ? 'rgba(255,255,255,0.1)' : '#E2E8F0') 
+                     backgroundColor: item.active ? Colors.primary : (isDark ? 'rgba(255,255,255,0.1)' : '#E2E8F0') 
                    }]}>
                       <View style={[styles.toggleThumb, { 
-                        left: (item.label === 'Modo Lunar' && isDark) ? 22 : 2 
+                        left: item.active ? 22 : 2 
                       }]} />
                    </View>
                 ) : (
@@ -212,6 +223,73 @@ export default function PerfilScreen() {
             />
           </View>
         </KeyboardAvoidingView>
+      </Modal>
+
+      {/* Privacy & Data Modal */}
+      <Modal visible={showPrivacy} transparent animationType="fade" onRequestClose={() => setShowPrivacy(false)}>
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { backgroundColor: colors.bgCard }]}>
+            <View style={styles.modalHeader}>
+              <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>Privacidad y Datos</Text>
+              <Pressable onPress={() => setShowPrivacy(false)}>
+                <Ionicons name="close" size={24} color={colors.textLight} />
+              </Pressable>
+            </View>
+            <View style={styles.modalBody}>
+              <Text style={[styles.modalText, { color: colors.textSecondary }]}>Tus datos están encriptados y guardados de forma segura localmente en tu dispositivo. Nadie más tiene acceso a tu historial clínico o tus registros de emociones diarios.</Text>
+            </View>
+            <JewelButton title="Entendido" onPress={() => setShowPrivacy(false)} style={{ marginTop: 20 }} />
+          </View>
+        </View>
+      </Modal>
+
+      {/* Invite Friends Modal */}
+      <Modal visible={showInvite} transparent animationType="fade" onRequestClose={() => setShowInvite(false)}>
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { backgroundColor: colors.bgCard }]}>
+            <View style={styles.modalHeader}>
+              <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>Invitar Amigos</Text>
+              <Pressable onPress={() => setShowInvite(false)}>
+                <Ionicons name="close" size={24} color={colors.textLight} />
+              </Pressable>
+            </View>
+            <View style={[styles.modalBody, { alignItems: 'center' }]}>
+              <View style={[styles.inviteIconWrap, { backgroundColor: Colors.accent + '20' }]}>
+                <Ionicons name="heart" size={32} color={Colors.accent} />
+              </View>
+              <Text style={[styles.modalText, { color: colors.textSecondary, textAlign: 'center', marginTop: 16 }]}>Comparte el bienestar con las personas que más te importan. Copia tu enlace de invitación a continuación:</Text>
+              <View style={[styles.inviteLinkBox, { backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#F7FAFC', borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)' }]}>
+                <Text style={{ color: colors.textPrimary, fontFamily: 'Poppins_500Medium', flex: 1 }} numberOfLines={1}>anima.app/invitar/usuario123</Text>
+                <Ionicons name="copy-outline" size={20} color={colors.primary} />
+              </View>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Help & Support Modal */}
+      <Modal visible={showHelp} transparent animationType="fade" onRequestClose={() => setShowHelp(false)}>
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { backgroundColor: colors.bgCard }]}>
+            <View style={styles.modalHeader}>
+              <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>Ayuda y Soporte</Text>
+              <Pressable onPress={() => setShowHelp(false)}>
+                <Ionicons name="close" size={24} color={colors.textLight} />
+              </Pressable>
+            </View>
+            <View style={styles.modalBody}>
+              <Text style={[styles.modalText, { color: colors.textSecondary, marginBottom: 16 }]}>¿Tienes algún problema o duda sobre tu proceso en Anima?</Text>
+              <Pressable style={[styles.supportActionBtn, { backgroundColor: Colors.primary + '15' }]}>
+                <Ionicons name="mail-outline" size={20} color={Colors.primary} />
+                <Text style={[styles.supportActionText, { color: Colors.primary }]}>Enviar un correo a soporte</Text>
+              </Pressable>
+              <Pressable style={[styles.supportActionBtn, { backgroundColor: Colors.secondary + '15' }]}>
+                <Ionicons name="book-outline" size={20} color={Colors.secondary} />
+                <Text style={[styles.supportActionText, { color: Colors.secondary }]}>Leer Preguntas Frecuentes</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
       </Modal>
 
     </ScreenWrapper>
@@ -326,5 +404,21 @@ const styles = StyleSheet.create({
     borderRadius: 16, padding: 16,
     fontSize: 16, color: Colors.textPrimary, fontFamily: 'Poppins_400Regular',
     borderWidth: 1, borderColor: 'rgba(0,0,0,0.05)',
+  },
+  modalBody: { paddingBottom: 16 },
+  modalText: {
+    fontSize: 14, fontFamily: 'Poppins_400Regular', lineHeight: 22,
+  },
+  inviteIconWrap: {
+    width: 64, height: 64, borderRadius: 32, justifyContent: 'center', alignItems: 'center',
+  },
+  inviteLinkBox: {
+    flexDirection: 'row', alignItems: 'center', marginTop: 16, padding: 16, borderRadius: 12, borderWidth: 1, width: '100%',
+  },
+  supportActionBtn: {
+    flexDirection: 'row', alignItems: 'center', padding: 16, borderRadius: 16, marginBottom: 12, gap: 12,
+  },
+  supportActionText: {
+    fontSize: 14, fontFamily: 'Poppins_500Medium',
   },
 });

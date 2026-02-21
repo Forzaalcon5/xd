@@ -20,8 +20,10 @@ export default function SelectPlanScreen() {
   const { colors, isDark } = useTheme();
   const setPlan = useStore((s) => s.setPlan);
   const userName = useStore((s) => s.userName);
+  const recommendedPlan = useStore((s) => s.recommendedPlan);
   
-  const [selectedId, setSelectedId] = useState<EmotionalRouteId | null>(null);
+  // Default to recommended plan if it exists
+  const [selectedId, setSelectedId] = useState<EmotionalRouteId | null>(recommendedPlan as EmotionalRouteId | null);
   const [showDisclaimer, setShowDisclaimer] = useState(false);
 
   const handleConfirm = () => {
@@ -32,6 +34,14 @@ export default function SelectPlanScreen() {
   };
 
   const selectedRoute = EMOTIONAL_ROUTES.find(r => r.id === selectedId);
+  const recommendedRouteEntity = EMOTIONAL_ROUTES.find(r => r.id === recommendedPlan);
+
+  // Dynamic sorting to surface the recommended route as the first card in the carousel
+  const displayRoutes = [...EMOTIONAL_ROUTES].sort((a, b) => {
+    if (a.id === recommendedPlan) return -1;
+    if (b.id === recommendedPlan) return 1;
+    return 0;
+  });
 
   return (
     <ScreenWrapper style={styles.container}>
@@ -47,10 +57,12 @@ export default function SelectPlanScreen() {
         <Animated.View entering={FadeInUp.duration(600)} style={styles.header}>
           <Mascot size={80} variant="greeting" />
           <Text style={[styles.title, { color: '#FFFFFF' }]}>
-            Hola, {userName || 'amigo'} ✨
+            {recommendedRouteEntity ? `Te sugerimos:\n${recommendedRouteEntity.title}` : `Hola, ${userName || 'amigo'} ✨`}
           </Text>
           <Text style={[styles.subtitle, { color: 'rgba(255,255,255,0.7)' }]}>
-            Explora las rutas deslizando y elige la que más resuene contigo.
+            {recommendedPlan 
+              ? 'Puedes aceptar esta ruta o explorar las demás deslizando.' 
+              : 'Explora las rutas deslizando y elige la que más resuene contigo.'}
           </Text>
         </Animated.View>
 
@@ -63,7 +75,7 @@ export default function SelectPlanScreen() {
           decelerationRate="fast"
           snapToAlignment="center"
         >
-          {EMOTIONAL_ROUTES.map((route, index) => {
+          {displayRoutes.map((route, index) => {
             const isSelected = selectedId === route.id;
             return (
               <Animated.View key={route.id} entering={FadeInRight.duration(500).delay(100 + index * 100)}>
@@ -78,10 +90,16 @@ export default function SelectPlanScreen() {
                     
                     {/* Artistic gradient fade */}
                     <LinearGradient
-                      colors={['transparent', 'rgba(0,0,0,0.6)', 'rgba(0,0,0,0.95)']}
-                      locations={[0.3, 0.65, 1]}
+                      colors={['transparent', 'rgba(0,0,0,0.5)', 'rgba(0,0,0,0.95)']}
                       style={StyleSheet.absoluteFillObject}
                     />
+
+                    {/* Recommended Badge */}
+                    {recommendedPlan === route.id && (
+                      <Animated.View entering={FadeInUp.delay(300)} style={styles.recommendedBadge}>
+                        <Text style={styles.recommendedBadgeText}>✨ Recomendado para ti</Text>
+                      </Animated.View>
+                    )}
 
                     {/* Card Content Floating */}
                     <View style={styles.cardContent}>
@@ -231,4 +249,14 @@ const styles = StyleSheet.create({
   modalText: {
     fontSize: 14, fontFamily: 'Poppins_400Regular', textAlign: 'center', lineHeight: 22,
   },
+  recommendedBadge: {
+    position: 'absolute', top: 16, left: 16,
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    paddingHorizontal: 16, paddingVertical: 8,
+    borderRadius: 20,
+    borderWidth: 1, borderColor: 'rgba(255,255,255,0.3)',
+  },
+  recommendedBadgeText: {
+    color: '#FFF', fontFamily: 'Poppins_600SemiBold', fontSize: 13,
+  }
 });

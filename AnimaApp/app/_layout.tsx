@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, StyleSheet } from 'react-native';
+import { View, StyleSheet, AppState, LogBox } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { Stack, router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -7,6 +7,10 @@ import { useFonts, Poppins_400Regular, Poppins_500Medium, Poppins_600SemiBold, P
 import * as SplashScreen from 'expo-splash-screen';
 import SplashScreenComponent from '../components/SplashScreen';
 import { useStore } from '../store/useStore';
+import { NotificationService } from '../utils/NotificationService';
+
+// Silencia el falso error de Expo Go sobre notificaciones remotas
+LogBox.ignoreLogs(['expo-notifications: Android Push notifications', 'Failed to schedule the notification']);
 
 // Prevent native splash from auto-hiding (font loading)
 SplashScreen.preventAutoHideAsync().catch(() => {});
@@ -17,6 +21,7 @@ function AppLayout() {
   const [showSplash, setShowSplash] = useState(true);
   const isAuthenticated = useStore((s) => s.isAuthenticated);
   const currentPlan = useStore((s) => s.currentPlan);
+  const notificationsEnabled = useStore((s) => s.notificationsEnabled);
 
   // Load premium fonts
   const [fontsLoaded] = useFonts({
@@ -37,12 +42,35 @@ function AppLayout() {
       if (!isAuthenticated) {
         router.replace('/(auth)/login');
       } else if (!currentPlan) {
-        router.replace('/(onboarding)/select-plan');
+        router.replace('/(onboarding)/triage');
       } else {
         router.replace('/(tabs)');
       }
     }
   }, [showSplash, isAuthenticated, currentPlan]);
+
+  // Initialize notifications
+  useEffect(() => {
+    if (notificationsEnabled && isAuthenticated) {
+      NotificationService.requestPermissionsAsync().then((granted) => {
+        if (granted) {
+          NotificationService.scheduleMorningQuote('Tu cuerpo y mente merecen un momento de paz hoy.');
+          NotificationService.scheduleEveningJournal();
+          NotificationService.scheduleInactivityReminder();
+        }
+      });
+    }
+  }, [notificationsEnabled, isAuthenticated]);
+
+  // Handle AppState to reset inactivity reminder
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', (nextAppState) => {
+      if (nextAppState.match(/inactive|background/) && notificationsEnabled) {
+        NotificationService.scheduleInactivityReminder();
+      }
+    });
+    return () => subscription.remove();
+  }, [notificationsEnabled]);
 
   // Wait for fonts to load before anything
   if (!fontsLoaded) {
@@ -77,7 +105,6 @@ function AppLayout() {
           name="actividades/gratitud"
           options={{ animation: 'slide_from_right' }}
         />
-        <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
       </Stack>
     </GestureHandlerRootView>
   );
