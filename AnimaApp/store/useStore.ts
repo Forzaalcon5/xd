@@ -166,7 +166,7 @@ export const useStore = create<AppState>()(
         { id: '1', title: 'Respiración Guiada', description: 'Respira y relaja tu mente.', icon: 'water-outline', color: '#87CEEB', gradient: ['#89F7FE', '#66A6FF'], duration: '5 min' },
         { id: '2', title: 'Diario Estelar', description: 'Escribe cosas positivas del día.', icon: 'journal-outline', color: '#FFD93D', gradient: ['#FFD200', '#F7971E'], duration: '10 min' },
         { id: '3', title: 'Relajación Progresiva', description: 'Libera la tensión de tu cuerpo.', icon: 'leaf-outline', color: '#C4B7EB', gradient: ['#E0C3FC', '#8EC5FC'], duration: '8 min' },
-        { id: '4', title: 'Meditación Breve', description: 'Encuentra calma en minutos.', icon: 'sparkles-outline', color: '#A8E6CF', gradient: ['#D4FC79', '#96E6A1'], duration: '5 min' },
+        { id: '4', title: 'Conexión 5 Sentidos', description: 'Atención plena interactiva para la ansiedad.', icon: 'planet-outline', color: '#A8E6CF', gradient: ['#D4FC79', '#96E6A1'], duration: '5 min' },
       ],
       recentActivities: [
         { title: 'Respiración Guiada', time: 'Hoy • 5 min', detail: 'Relajaste', icon: 'water-outline', color: '#87CEEB' },

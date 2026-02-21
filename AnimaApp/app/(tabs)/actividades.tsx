@@ -21,8 +21,8 @@ export default function ActividadesScreen() {
       router.push('/actividades/gratitud');
     } else if (activity.title.toLowerCase().includes('relajación')) {
       router.push('/actividades/relajacion');
-    } else if (activity.title.toLowerCase().includes('meditación')) {
-      router.push('/actividades/meditacion');
+    } else if (activity.title.toLowerCase().includes('sentidos')) {
+      router.push('/actividades/grounding');
     }
     // Other activities show a placeholder for now
   };
