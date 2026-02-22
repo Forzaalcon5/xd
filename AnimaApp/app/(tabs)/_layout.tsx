@@ -9,6 +9,7 @@ import Animated, {
   useAnimatedStyle,
   withSpring,
 } from 'react-native-reanimated';
+import { AdaptiveSOSButton } from '../../components/AdaptiveSOS';
 
 function TabIcon({ name, color, focused, size }: {
   name: string; color: string; focused: boolean; size: number;
@@ -44,6 +45,7 @@ export default function TabsLayout() {
   const { colors, isDark } = useTheme(); // NEW
 
   return (
+    <>
       <Tabs
         screenOptions={{
           sceneStyle: { backgroundColor: 'transparent' },
@@ -122,6 +124,8 @@ export default function TabsLayout() {
         }}
       />
     </Tabs>
+    <AdaptiveSOSButton />
+    </>
   );
 }
 

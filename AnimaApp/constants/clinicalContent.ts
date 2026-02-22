@@ -10,6 +10,7 @@ export interface EmotionalRoute {
   focusArea: string;
   strategies: string[];
   microRetos: MicroReto[];
+  citasContigoMismo: CitaContigoMismo[];
   dailyQuotes: string[];
   image: any;
 }
@@ -19,6 +20,12 @@ export interface MicroReto {
   title: string;
   action: string;
   duration: string;
+  icon: string;
+}
+
+export interface CitaContigoMismo {
+  id: string;
+  title: string;
   icon: string;
 }
 
@@ -43,6 +50,12 @@ export const EMOTIONAL_ROUTES: EmotionalRoute[] = [
       { id: 'ren1', title: 'Movimiento Mínimo', action: 'Ponte de pie, estira los brazos hacia el techo por 10 segundos y vuelve a sentarte.', duration: '< 1 min', icon: 'body-outline' },
       { id: 'ren2', title: 'Hidratación', action: 'Sirve y bebe un vaso largo de agua fría.', duration: '1 min', icon: 'water-outline' },
       { id: 'ren3', title: 'Cambio de Aire', action: 'Abre la ventana más cercana y respira el aire de afuera por 30 segundos.', duration: '< 1 min', icon: 'leaf-outline' },
+    ],
+    citasContigoMismo: [
+      { id: 'rad_ren1', title: 'Escuchar 3 canciones seguidas sin hacer nada más', icon: 'musical-notes-outline' },
+      { id: 'rad_ren2', title: 'Arreglarte hoy como si fueras a salir, aunque te quedes en casa', icon: 'shirt-outline' },
+      { id: 'rad_ren3', title: 'Caminar 5 minutos al aire libre', icon: 'walk-outline' },
+      { id: 'rad_ren4', title: 'Anotar tu pequeña victoria del día', icon: 'star-outline' },
     ],
     dailyQuotes: [
       'Hoy no necesitas tener ganas para empezar, solo dar el primer paso. 🌱',
@@ -74,6 +87,12 @@ export const EMOTIONAL_ROUTES: EmotionalRoute[] = [
       { id: 'aut2', title: 'Mensaje de Apoyo', action: 'Escríbete a ti mismo(a) en tus notas: "Hice lo mejor que pude hoy, y está bien".', duration: '< 1 min', icon: 'pencil-outline' },
       { id: 'aut3', title: 'Contacto Ligero', action: 'Envíale un meme o un video gracioso a un amigo, sin esperar respuesta inmediata.', duration: '2 min', icon: 'paper-plane-outline' },
     ],
+    citasContigoMismo: [
+      { id: 'rad_aut1', title: 'Mirarte al espejo y decir "Estoy haciendo lo mejor que puedo"', icon: 'eye-outline' },
+      { id: 'rad_aut2', title: 'Comprar o prepararte tu snack favorito sin culpa', icon: 'ice-cream-outline' },
+      { id: 'rad_aut3', title: 'Escribirle a tu yo del pasado que todo saldrá bien', icon: 'mail-outline' },
+      { id: 'rad_aut4', title: 'Darte un masaje suave en las manos por 2 minutos', icon: 'hand-left-outline' },
+    ],
     dailyQuotes: [
       'El rechazo es una experiencia humana universal, no dice nada de tu valor personal. ❤️',
       'Háblate hoy como le hablarías a tu mejor amigo(a). Eres suficiente. 🫂',
@@ -103,6 +122,12 @@ export const EMOTIONAL_ROUTES: EmotionalRoute[] = [
       { id: 'bal1', title: 'Desconexión Express', action: 'Apaga la pantalla de tu teléfono o computadora, cierra los ojos y cuenta hasta 60.', duration: '1 min', icon: 'power-outline' },
       { id: 'bal2', title: 'Estiramiento de Cuello', action: 'Gira suavemente el cuello de lado a lado para liberar la tensión acumulada.', duration: '< 1 min', icon: 'fitness-outline' },
       { id: 'bal3', title: 'Anotar un Límite', action: 'Escribe en un papel algo a lo que necesites decir "No" esta semana.', duration: '2 min', icon: 'hand-left-outline' },
+    ],
+    citasContigoMismo: [
+      { id: 'rad_bal1', title: 'Poner el celular en modo no molestar por 1 hora completa', icon: 'moon-outline' },
+      { id: 'rad_bal2', title: 'Decirle "No, por ahora" a una demanda externa de tiempo', icon: 'close-circle-outline' },
+      { id: 'rad_bal3', title: 'Tomarte un descanso a oscuras por 15 minutos', icon: 'bed-outline' },
+      { id: 'rad_bal4', title: 'Disfrutar de té o café caliente mirando por la ventana', icon: 'cafe-outline' },
     ],
     dailyQuotes: [
       'Tus límites son la valla de seguridad alrededor de tu paz mental. 🚧',
@@ -134,6 +159,12 @@ export const EMOTIONAL_ROUTES: EmotionalRoute[] = [
       { id: 'des2', title: 'Pausa Reflexiva', action: 'Mira a tu alrededor y encuentra 3 objetos de color verde. Nómbralos en voz alta.', duration: '< 1 min', icon: 'eye-outline' },
       { id: 'des3', title: 'Diario Flash', action: 'Anota en tu teléfono una pregunta que tengas sobre tu futuro sin intentar responderla.', duration: '1 min', icon: 'book-outline' },
     ],
+    citasContigoMismo: [
+      { id: 'rad_des1', title: 'Ver el primer capítulo de una serie que nunca elegirías', icon: 'tv-outline' },
+      { id: 'rad_des2', title: 'Comer algo nuevo u ordenar algo diferente en el menú', icon: 'restaurant-outline' },
+      { id: 'rad_des3', title: 'Caminar por un pasillo del súper al que nunca vas', icon: 'cart-outline' },
+      { id: 'rad_des4', title: 'Escuchar el género musical más lejano a tu gusto por 5 min', icon: 'headset-outline' },
+    ],
     dailyQuotes: [
       'No necesitas el mapa entero, solo saber cuál es el siguiente paso. 🗺️',
       'Tu curiosidad es una brújula; escríbela hoy. ¿Qué atrapó tu atención? 📖',
@@ -163,6 +194,12 @@ export const EMOTIONAL_ROUTES: EmotionalRoute[] = [
       { id: 'sol1', title: 'Conexión Sutil', action: 'Envíale un emoji (solo uno, como 👻 o 👽) a alguien con quien no hablas hace tiempo.', duration: '< 1 min', icon: 'chatbubble-outline' },
       { id: 'sol2', title: 'Acompañamiento Sonoro', action: 'Pon tu canción favorita de fondo mientras haces otra actividad.', duration: '5 min', icon: 'musical-notes-outline' },
       { id: 'sol3', title: 'Presencia de Mundo', action: 'Asómate por 1 minuto a ver pasar gente o autos. No estás solo en el planeta.', duration: '1 min', icon: 'planet-outline' },
+    ],
+    citasContigoMismo: [
+      { id: 'rad_sol1', title: 'Ir a un café para disfrutar la compañía sutil de estar rodeado de gente', icon: 'people-outline' },
+      { id: 'rad_sol2', title: 'Armar un plan de noche de cine épico solo para ti', icon: 'film-outline' },
+      { id: 'rad_sol3', title: 'Ir a una tienda y ver cosas que te gustan sin comprar', icon: 'bag-outline' },
+      { id: 'rad_sol4', title: 'Escribir 3 características que valoras de tu propia compañía', icon: 'heart-outline' },
     ],
     dailyQuotes: [
       'Tu valía no se mide por la cantidad de mensajes en tu teléfono hoy. 🌌',

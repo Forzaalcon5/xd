@@ -379,14 +379,12 @@ const MascotComponent = ({ size = 120, style, variant = 'happy' }: MascotProps) 
       -1, true
     );
 
-    // Breathing animation logic
+    // Breathing animation logic (fixed jump-cuts by removing withSequence inside withRepeat)
     if (variant === 'breathing' || variant === 'meditating') {
       breathScale.value = withRepeat(
-        withSequence(
-          withTiming(1.08, { duration: 4000, easing: Easing.inOut(Easing.ease) }), // Inhale
-          withTiming(1, { duration: 4000, easing: Easing.out(Easing.ease) })       // Exhale
-        ),
-        -1, true
+        withTiming(1.04, { duration: 3500, easing: Easing.inOut(Easing.sin) }),
+        -1, 
+        true
       );
     }
     
@@ -397,29 +395,40 @@ const MascotComponent = ({ size = 120, style, variant = 'happy' }: MascotProps) 
     };
   }, [variant]);
 
-  const floatStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: floatY.value }],
-  }));
-
   const glowStyle = useAnimatedStyle(() => ({
     opacity: interpolate(glow.value, [0, 1], [0.3, 0.6]),
     transform: [{ scale: interpolate(glow.value, [0, 1], [0.9, 1.1]) }],
   }));
 
-  const breathStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: breathScale.value }],
+  const combinedStyle = useAnimatedStyle(() => ({
+    transform: [
+      { translateY: floatY.value },
+      { scale: breathScale.value }
+    ],
   }));
 
   const imageSource = MASCOT_IMAGES[variant] || MASCOT_IMAGES.happy;
 
+  // Custom adjustments for variants that have too much transparent padding from AI generation
+  const scaleMap: Record<string, { image: number, glow: number }> = {
+    happy: { image: 1, glow: 1.3 }, // Original centered graphic
+    meditating: { image: 1.45, glow: 1.05 }, // Needs a bit more scale
+    star: { image: 1.6, glow: 0.95 }, // Extremely padded graphic
+  };
+
+  // Default to 1.35x scale for all new AI-generated variants to offset the padding
+  const currentScale = scaleMap[variant] || { image: 1.35, glow: 1.1 };
+  const imageScale = currentScale.image;
+  const glowMultiplier = currentScale.glow;
+
   return (
-    <Animated.View style={[styles.mascotContainer, { width: size, height: size }, floatStyle, breathStyle, style]}>
+    <Animated.View style={[styles.mascotContainer, { width: size, height: size }, combinedStyle, style]}>
       {/* Glow behind mascot */}
-      <Animated.View style={[styles.mascotGlow, { width: size * 1.3, height: size * 1.3 }, glowStyle]} />
+      <Animated.View style={[styles.mascotGlow, { width: size * glowMultiplier, height: size * glowMultiplier }, glowStyle]} />
       {/* Mascot image */}
       <Image
         source={imageSource}
-        style={{ width: size, height: size }}
+        style={{ width: size, height: size, transform: [{ scale: imageScale }] }}
         resizeMode="contain"
       />
     </Animated.View>
@@ -1074,6 +1083,44 @@ const styles = StyleSheet.create({
     fontSize: 11, fontWeight: '600', fontFamily: 'Poppins_600SemiBold',
   },
   
+  // ConnectionRadarCard
+  radarContainer: {
+    padding: 16, borderRadius: 20, marginBottom: 24,
+    borderWidth: 1,
+  },
+  radarEnergyRow: {
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+    marginBottom: 8,
+  },
+  radarEnergyLabel: {
+    fontSize: 14, fontFamily: 'Poppins_600SemiBold',
+  },
+  radarEnergyValue: {
+    fontSize: 12, fontFamily: 'Poppins_500Medium',
+  },
+  radarTrack: {
+    height: 8, borderRadius: 4, overflow: 'hidden', marginBottom: 16,
+  },
+  radarBar: {
+    height: '100%', borderRadius: 4,
+  },
+  radarTaskRow: {
+    flexDirection: 'row', alignItems: 'center',
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+  },
+  radarCheckbox: {
+    width: 22, height: 22, borderRadius: 11,
+    borderWidth: 2, justifyContent: 'center', alignItems: 'center',
+    marginRight: 12,
+  },
+  radarIconWrap: {
+    width: 32, height: 32, borderRadius: 8,
+    justifyContent: 'center', alignItems: 'center', marginRight: 10,
+  },
+  radarTaskTitle: {
+    flex: 1, fontSize: 13, fontFamily: 'Poppins_400Regular',
+  },
   // MicroChallengeCard
   mcContainer: {
     padding: 16, borderRadius: 20, marginBottom: 24,
@@ -1105,10 +1152,130 @@ const styles = StyleSheet.create({
 });
 
 // ============================================================
-// MICRO-CHALLENGE CARD (Actionable routes)
+// RADAR DE CONEXIÓN (Checklist widget)
 // ============================================================
 import { EMOTIONAL_ROUTES, MicroReto } from '../constants/clinicalContent';
 
+type SelfCareTask = {
+  id: string;
+  title: string;
+  icon: keyof typeof Ionicons.glyphMap;
+  completed: boolean;
+};
+
+export function ConnectionRadarCard() {
+  const { colors, isDark } = useTheme();
+  const currentPlan = useStore((s) => s.currentPlan);
+  
+  const initialTasks = React.useMemo(() => {
+    const route = EMOTIONAL_ROUTES.find(r => r.id === currentPlan) || EMOTIONAL_ROUTES[0];
+    return route.citasContigoMismo.map(cita => ({
+      ...cita,
+      icon: cita.icon as keyof typeof Ionicons.glyphMap,
+      completed: false
+    }));
+  }, [currentPlan]);
+
+  const [tasks, setTasks] = useState<SelfCareTask[]>(initialTasks);
+
+  React.useEffect(() => {
+    setTasks(initialTasks);
+  }, [initialTasks]);
+
+  const completedCount = tasks.filter(t => t.completed).length;
+  const progressPercent = tasks.length > 0 ? completedCount / tasks.length : 0;
+  
+  const animatedProgress = useSharedValue(0);
+
+  React.useEffect(() => {
+    animatedProgress.value = withSpring(progressPercent, { damping: 12, stiffness: 90 });
+    
+    // Confetti effect when perfectly completed
+    if (progressPercent === 1) {
+      setTimeout(() => {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      }, 400);
+    }
+  }, [progressPercent]);
+
+  const toggleTask = (id: string) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setTasks(prev => prev.map(t => t.id === id ? { ...t, completed: !t.completed } : t));
+  };
+
+  const progressBarStyle = useAnimatedStyle(() => {
+    const clampedProgress = Math.max(0, Math.min(1, animatedProgress.value));
+    return {
+      width: `${clampedProgress * 100}%`,
+      backgroundColor: interpolateColor(
+        clampedProgress,
+        [0, 0.5, 1],
+        ['#EF4444', '#FCD34D', '#4ADE80'] // Red -> Yellow -> Green
+      ),
+    };
+  });
+
+  return (
+    <Animated.View entering={FadeInUp.duration(400).delay(200)}>
+      <View style={[styles.radarContainer, { 
+        backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)',
+        borderColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'
+      }]}>
+        
+        {/* Progress Display */}
+        <View style={styles.radarEnergyRow}>
+          <Text style={[styles.radarEnergyLabel, { color: colors.textPrimary }]}>Energía Propia</Text>
+          <Text style={[styles.radarEnergyValue, { color: colors.textSecondary }]}>{Math.round(progressPercent * 100)}%</Text>
+        </View>
+        <View style={[styles.radarTrack, { backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)' }]}>
+          <Animated.View style={[styles.radarBar, progressBarStyle]} />
+        </View>
+
+        {/* Tasks */}
+        {tasks.map((task, index) => {
+          const isLast = index === tasks.length - 1;
+          return (
+            <Pressable 
+              key={task.id} 
+              onPress={() => toggleTask(task.id)}
+              style={({ pressed }) => [
+                styles.radarTaskRow,
+                !isLast && { borderBottomColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)' },
+                isLast && { borderBottomWidth: 0, paddingBottom: 0 },
+                pressed && { opacity: 0.7 }
+              ]}
+            >
+              <View style={[
+                styles.radarCheckbox, 
+                { borderColor: task.completed ? '#4ADE80' : colors.textLight },
+                task.completed && { backgroundColor: '#4ADE80' }
+              ]}>
+                {task.completed && <Ionicons name="checkmark" size={14} color="#FFF" />}
+              </View>
+              
+              <View style={[styles.radarIconWrap, { backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)' }]}>
+                <Ionicons name={task.icon} size={16} color={task.completed ? colors.textLight : colors.primary} />
+              </View>
+              
+              <Text style={[
+                styles.radarTaskTitle, 
+                { color: task.completed ? colors.textLight : colors.textPrimary },
+                task.completed && { textDecorationLine: 'line-through' }
+              ]}>
+                {task.title}
+              </Text>
+            </Pressable>
+          );
+        })}
+
+      </View>
+    </Animated.View>
+  );
+}
+
+// ============================================================
+// MICRO-CHALLENGE CARD (Actionable routes)
+// ============================================================
 export function MicroChallengeCard() {
   const { colors, isDark } = useTheme();
   const currentPlan = useStore((s) => s.currentPlan);

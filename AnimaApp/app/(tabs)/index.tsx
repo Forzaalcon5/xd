@@ -7,7 +7,7 @@ import { useRouter } from 'expo-router';
 import { Colors, Gradients, MoodConfig, DAILY_AFFIRMATIONS } from '../../constants/theme';
 import {
   GlassCard, MoodButton, JewelButton,
-  Mascot, SectionHeader, FeatureButton, FloatingParticles, AmbientButton, WeeklyProgressRing, MicroChallengeCard,
+  Mascot, SectionHeader, FeatureButton, FloatingParticles, AmbientButton, WeeklyProgressRing, MicroChallengeCard, ConnectionRadarCard,
 } from '../../components/ui';
 import { useTheme } from '../../hooks/useTheme';
 import { useStore, MoodType } from '../../store/useStore';
@@ -133,6 +133,12 @@ export default function HomeScreen() {
         <Animated.View entering={FadeInUp.duration(400).delay(450)}>
           <SectionHeader title="Rompiendo el Bucle" subtitle="Tu micro-reto de hoy" />
           <MicroChallengeCard />
+        </Animated.View>
+
+        {/* Connection Radar Tracker (Dynamic Strategy Implementation) */}
+        <Animated.View entering={FadeInUp.duration(400).delay(480)}>
+          <SectionHeader title="Radar de Conexión" subtitle="Citas contigo mismo" />
+          <ConnectionRadarCard />
         </Animated.View>
 
         {/* Mood Selector Card (RF-11, RF-20) */}

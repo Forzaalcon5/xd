@@ -10,6 +10,7 @@ import { useStore, MoodType } from '../../store/useStore';
 import { useTheme } from '../../hooks/useTheme';
 import { SoundService } from '../../utils/SoundService'; 
 import { NotificationService } from '../../utils/NotificationService';
+import { CLINICAL_DISCLAIMER } from '../../constants/clinicalContent';
 
 export default function PerfilScreen() {
   const router = useRouter();
@@ -27,6 +28,7 @@ export default function PerfilScreen() {
   const [showPrivacy, setShowPrivacy] = useState(false);
   const [showInvite, setShowInvite] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
+  const [showDisclaimer, setShowDisclaimer] = useState(false);
 
   const handleLogout = () => {
     Alert.alert('Cerrar Sesión', '¿Seguro que quieres salir?', [
@@ -57,17 +59,21 @@ export default function PerfilScreen() {
     }
   };
 
-  const settingsItems = [
+  const configItems = [
     { icon: 'compass-outline', label: 'Cambiar Mi Ruta', color: '#FCD34D', type: 'link', action: () => router.replace('/(onboarding)/select-plan') },
+    { icon: 'moon-outline', label: 'Modo Lunar', color: colors.secondary, type: 'toggle', action: toggleTheme, active: isDark },
     { icon: 'notifications-outline', label: 'Notificaciones', color: colors.primary, type: 'toggle', action: () => toggleNotifications(!notificationsEnabled), active: notificationsEnabled },
     { icon: 'alert-circle-outline', label: 'Probar Notificación', color: colors.accent, type: 'link', action: async () => { 
         Alert.alert('¡Prueba iniciada!', 'Sal de la app ahora. La notificación llegará en 5 segundos.');
         await NotificationService.scheduleTestNotification(); 
     } },
-    { icon: 'moon-outline', label: 'Modo Lunar', color: colors.secondary, type: 'toggle', action: toggleTheme, active: isDark },
-    { icon: 'shield-checkmark-outline', label: 'Privacidad y Datos', color: colors.mint, type: 'link', action: () => setShowPrivacy(true) },
-    { icon: 'heart-outline', label: 'Invitar amigos', color: colors.accent, type: 'link', action: () => setShowInvite(true) },
-    { icon: 'help-buoy-outline', label: 'Ayuda y Soporte', color: colors.textLight, type: 'link', action: () => setShowHelp(true) },
+  ];
+
+  const supportItems = [
+    { icon: 'shield-checkmark-outline', label: 'Privacidad y Datos', color: colors.mint, type: 'link', action: () => setShowPrivacy(true), active: undefined },
+    { icon: 'warning-outline', label: 'Aviso Médico (SOS)', color: '#EF4444', type: 'link', action: () => setShowDisclaimer(true), active: undefined },
+    { icon: 'heart-outline', label: 'Invitar amigos', color: colors.accent, type: 'link', action: () => setShowInvite(true), active: undefined },
+    { icon: 'help-buoy-outline', label: 'Ayuda y Soporte', color: colors.textLight, type: 'link', action: () => setShowHelp(true), active: undefined },
   ];
 
   return (
@@ -116,17 +122,52 @@ export default function PerfilScreen() {
           </Pressable>
         </Animated.View>
 
-        {/* Settings Section */}
-        <Animated.View entering={FadeInUp.duration(500).delay(300)}>
-          <SectionHeader title="Configuraciones" />
+        {/* Settings / System Section */}
+        <Animated.View entering={FadeInUp.duration(500).delay(200)}>
+          <SectionHeader title="Sistema" />
           <GlassCard style={styles.settingsCard}>
-            {settingsItems.map((item, i) => (
+            {configItems.map((item, i) => (
               <Pressable 
                 key={i} 
                 onPress={item.action}
                 style={({ pressed }) => [
                   styles.settingsItem, 
-                  i < settingsItems.length - 1 && [styles.settingsBorder, { borderBottomColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.04)' }],
+                  i < configItems.length - 1 && [styles.settingsBorder, { borderBottomColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.04)' }],
+                  pressed && { backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.02)' }
+                ]}
+              >
+                <View style={[styles.settingsIconWrap, { backgroundColor: item.color + '10' }]}>
+                  <Ionicons name={item.icon as any} size={20} color={item.color} />
+                </View>
+                <Text style={[styles.settingsLabel, { color: colors.textPrimary }]}>{item.label}</Text>
+                
+                {item.type === 'toggle' ? (
+                   <View style={[styles.toggleTrack, { 
+                     backgroundColor: item.active ? Colors.primary : (isDark ? 'rgba(255,255,255,0.1)' : '#E2E8F0') 
+                   }]}>
+                      <View style={[styles.toggleThumb, { 
+                        left: item.active ? 22 : 2 
+                      }]} />
+                   </View>
+                ) : (
+                  <Ionicons name="chevron-forward" size={16} color={colors.textLight} />
+                )}
+              </Pressable>
+            ))}
+          </GlassCard>
+        </Animated.View>
+
+        {/* Support Section */}
+        <Animated.View entering={FadeInUp.duration(500).delay(300)} style={{ marginTop: 24 }}>
+          <SectionHeader title="Información y Soporte" />
+          <GlassCard style={styles.settingsCard}>
+            {supportItems.map((item, i) => (
+              <Pressable 
+                key={i} 
+                onPress={item.action}
+                style={({ pressed }) => [
+                  styles.settingsItem, 
+                  i < supportItems.length - 1 && [styles.settingsBorder, { borderBottomColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.04)' }],
                   pressed && { backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.02)' }
                 ]}
               >
@@ -239,6 +280,20 @@ export default function PerfilScreen() {
               <Text style={[styles.modalText, { color: colors.textSecondary }]}>Tus datos están encriptados y guardados de forma segura localmente en tu dispositivo. Nadie más tiene acceso a tu historial clínico o tus registros de emociones diarios.</Text>
             </View>
             <JewelButton title="Entendido" onPress={() => setShowPrivacy(false)} style={{ marginTop: 20 }} />
+          </View>
+        </View>
+      </Modal>
+
+      {/* Disclaimer Medical Warning Modal */}
+      <Modal visible={showDisclaimer} transparent animationType="fade" onRequestClose={() => setShowDisclaimer(false)}>
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { backgroundColor: colors.bgCard }]}>
+            <View style={{ width: 64, height: 64, borderRadius: 32, justifyContent: 'center', alignItems: 'center', marginBottom: 20, backgroundColor: 'rgba(239,68,68,0.1)' }}>
+              <Ionicons name="warning" size={32} color="#EF4444" />
+            </View>
+            <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>{CLINICAL_DISCLAIMER.title}</Text>
+            <Text style={[styles.modalText, { color: colors.textSecondary, marginBottom: 24, textAlign: 'center' }]}>{CLINICAL_DISCLAIMER.content}</Text>
+            <JewelButton title="Entendido" onPress={() => setShowDisclaimer(false)} style={{ width: '100%' }} />
           </View>
         </View>
       </Modal>

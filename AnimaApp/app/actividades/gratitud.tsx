@@ -383,7 +383,7 @@ export default function GratitudeJournalScreen() {
           {journalEntries.length === 0 && (
             <View style={styles.emptyState}>
               <Ionicons name="star-outline" size={40} color={isDark ? "rgba(255,255,255,0.2)" : "rgba(91, 155, 213, 0.2)"} />
-              <Text style={[styles.emptyStateTitle, { color: colors.textLight }]}>Tu cielo de gratitud está vacío...</Text>
+              <Text style={[styles.emptyStateTitle, { color: colors.textLight }]}>Tu cielo está vacío...</Text>
               <Text style={[styles.emptyStateSubtitle, { color: colors.textLight }]}>
                 Agrega lo que te hace sentir agradecido y llena tu cielo de estrellas ✨
               </Text>

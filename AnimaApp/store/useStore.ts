@@ -47,6 +47,10 @@ interface AppState {
   showSplash: boolean;
   notificationsEnabled: boolean;
   
+  // Debug
+  mockLateNight: boolean;
+  setMockLateNight: (val: boolean) => void;
+  
   // Plan (Emotional Route)
   currentPlan: string | null;
   recommendedPlan: string | null; // Resultado del triage temporal
@@ -134,6 +138,10 @@ function getBotResponse(userMessage: string): string {
 export const useStore = create<AppState>()(
   persist(
     (set, get) => ({
+      // Debug
+      mockLateNight: false,
+      setMockLateNight: (val: boolean) => set({ mockLateNight: val }),
+
       // Auth
       isAuthenticated: false,
       userName: '',
@@ -169,6 +177,10 @@ export const useStore = create<AppState>()(
         { id: '4', title: 'Conexión 5 Sentidos', description: 'Atención plena interactiva para la ansiedad.', icon: 'planet-outline', color: '#A8E6CF', gradient: ['#D4FC79', '#96E6A1'], duration: '5 min' },
         { id: '5', title: 'Cápsula de Papel', description: 'Desahoga y quema tus pensamientos negativos.', icon: 'flame-outline', color: '#FF7E67', gradient: ['#FF9A44', '#FC6076'], duration: 'Actividad libre' },
         { id: '6', title: 'Pomodoro de Paz', description: 'Céntrate con descansos activos y sonidos de lluvia.', icon: 'timer-outline', color: '#4ADE80', gradient: ['#4ADE80', '#38BDF8'], duration: '25 min' },
+        { id: '7', title: 'Diario Ciego', description: 'Escribe sin censura ni edición. Tus palabras desaparecerán solas.', icon: 'eye-off-outline', color: '#B39DDB', gradient: ['#D1C4E9', '#9575CD'], duration: 'Ruta Descubrimiento' },
+        { id: '8', title: 'Astillero de Victorias', description: 'Avanza tu barco celebrando cada pequeño paso.', icon: 'boat-outline', color: '#FFB74D', gradient: ['#FFE082', '#FF8A65'], duration: 'Ruta Renacer' },
+        { id: '9', title: 'Abrazo de Mariposa', description: 'Estimulación bilateral para calmar tu sistema nervioso.', icon: 'heart-half-outline', color: '#F48FB1', gradient: ['#FFCDD2', '#F06292'], duration: 'Ruta Autocompasión' },
+        { id: '10', title: 'Mensaje en una Botella', description: 'Lanza un mensaje al mar y recibe aliento anónimo.', icon: 'flask-outline', color: '#4FC3F7', gradient: ['#81D4FA', '#29B6F6'], duration: 'Ruta Soledad' },
       ],
       recentActivities: [
         { title: 'Respiración Guiada', time: 'Hoy • 5 min', detail: 'Relajaste', icon: 'water-outline', color: '#87CEEB' },

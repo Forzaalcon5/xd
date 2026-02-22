@@ -25,7 +25,6 @@ export default function SelectPlanScreen() {
   
   // Default to current plan if it exists, otherwise recommended
   const [selectedId, setSelectedId] = useState<EmotionalRouteId | null>((currentPlan || recommendedPlan) as EmotionalRouteId | null);
-  const [showDisclaimer, setShowDisclaimer] = useState(false);
 
   const handleConfirm = () => {
     if (selectedId) {
@@ -132,13 +131,7 @@ export default function SelectPlanScreen() {
           })}
         </ScrollView>
 
-        {/* Disclaimer SOS Button */}
-        <Animated.View entering={FadeIn.duration(800).delay(600)} style={styles.disclaimerContainer}>
-          <Pressable style={styles.sosButton} onPress={() => setShowDisclaimer(true)}>
-            <Ionicons name="warning-outline" size={16} color={colors.textLight} />
-            <Text style={[styles.sosText, { color: colors.textLight }]}>Información Importante (SOS)</Text>
-          </Pressable>
-        </Animated.View>
+
 
         <View style={{ height: 120 }} />
       </ScrollView>
@@ -154,19 +147,7 @@ export default function SelectPlanScreen() {
         </Animated.View>
       )}
 
-      {/* Disclaimer Modal */}
-      <Modal visible={showDisclaimer} transparent animationType="fade" onRequestClose={() => setShowDisclaimer(false)}>
-        <View style={styles.modalOverlay}>
-          <View style={[styles.modalContent, { backgroundColor: colors.bgCard }]}>
-            <View style={[styles.modalIconWrap, { backgroundColor: 'rgba(239,68,68,0.1)' }]}>
-              <Ionicons name="warning" size={32} color="#EF4444" />
-            </View>
-            <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>{CLINICAL_DISCLAIMER.title}</Text>
-            <Text style={[styles.modalText, { color: colors.textSecondary }]}>{CLINICAL_DISCLAIMER.content}</Text>
-            <JewelButton title="Entendido" onPress={() => setShowDisclaimer(false)} style={{ marginTop: 24, width: '100%' }} />
-          </View>
-        </View>
-      </Modal>
+
 
     </ScreenWrapper>
   );

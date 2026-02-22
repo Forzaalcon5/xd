@@ -60,22 +60,31 @@ export default function PomodoroScreen() {
   const secs = timeLeft % 60;
   const timeString = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
 
+  // Fixed interval logic to prevent tearing down the interval every second
   useEffect(() => {
     let interval: ReturnType<typeof setInterval>;
-    if (isRunning && timeLeft > 0) {
+    if (isRunning) {
       interval = setInterval(() => {
         setTimeLeft((prev) => {
-          const newTime = prev - 1;
-          const total = mode === 'focus' ? FocusTime : BreakTime;
-          progress.value = withTiming(newTime / total, { duration: 1000, easing: Easing.linear });
-          return newTime;
+          const next = prev - 1;
+          if (next >= 0) {
+            progress.value = withTiming(next / (mode === 'focus' ? FocusTime : BreakTime), { duration: 1000, easing: Easing.linear });
+          }
+          return next;
         });
       }, 1000);
-    } else if (timeLeft === 0) {
+    }
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [isRunning, mode]);
+
+  // Separate effect to handle completion without disrupting the interval
+  useEffect(() => {
+    if (timeLeft === 0 && isRunning) {
       handleComplete();
     }
-    return () => clearInterval(interval);
-  }, [isRunning, timeLeft, mode]);
+  }, [timeLeft, isRunning]);
 
   useEffect(() => {
     return () => {

@@ -1,20 +1,39 @@
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Alert } from 'react-native';
 import Animated, { FadeInUp } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { Colors, Gradients } from '../../constants/theme';
 import { useTheme } from '../../hooks/useTheme';
 import { ActivityCard, SectionHeader, Mascot } from '../../components/ui';
 import { useStore } from '../../store/useStore';
+import { Pressable } from 'react-native';
 
 export default function ActividadesScreen() {
   const router = useRouter();
   const { colors, isDark } = useTheme();
   const activities = useStore((s) => s.activities);
   const currentPlan = useStore((s) => s.currentPlan);
+  const mockLateNight = useStore((s) => s.mockLateNight);
+
+  const isLateNight = React.useMemo(() => {
+    if (mockLateNight) return true;
+    const hour = new Date().getHours();
+    return hour >= 22 || hour < 5; // 10 PM to 4:59 AM
+  }, [mockLateNight]);
 
   const handleActivityPress = (activity: typeof activities[0]) => {
+    // Módulo 6: El Semáforo de Energía (Balance Exclusive)
+    if (currentPlan === 'balance' && isLateNight) {
+      if (!activity.title.toLowerCase().includes('respiración')) {
+        Alert.alert(
+          "Semáforo de Energía 🚦",
+          "Has llegado al final del día. Tu mente necesita detenerse y desconectar.\n\nPor tu bienestar clínico, todas las actividades intensas han sido bloqueadas. Solo tienes acceso a la Respiración Guiada."
+        );
+        return;
+      }
+    }
     if (activity.title.toLowerCase().includes('respiración')) {
       router.push('/actividades/respiracion');
     } else if (activity.title.toLowerCase().includes('estelar')) {
@@ -27,6 +46,42 @@ export default function ActividadesScreen() {
       router.push('/actividades/capsula');
     } else if (activity.title.toLowerCase().includes('pomodoro')) {
       router.push('/actividades/pomodoro');
+    } else if (activity.title.toLowerCase().includes('diario ciego')) {
+      if (currentPlan === 'descubrimiento') {
+        router.push('/actividades/diario-ciego');
+      } else {
+        Alert.alert(
+          "Actividad Exclusiva 🔒",
+          "El Diario Ciego es una herramienta clínica diseñada terapéuticamente solo para la Ruta del Descubrimiento.\n\nPuedes cambiar tu ruta actual en la pantalla de Perfil para acceder a ella."
+        );
+      }
+    } else if (activity.title.toLowerCase().includes('astillero')) {
+      if (currentPlan === 'renacer' || currentPlan === 'depresion') {
+        router.push('/actividades/astillero');
+      } else {
+        Alert.alert(
+          "Actividad Exclusiva 🔒",
+          "El Astillero de Victorias es un mini-juego terapéutico para recuperar la motivación, exclusivo de la Ruta Renacer.\n\nPuedes cambiar tu ruta actual en la pantalla de Perfil para acceder a ella."
+        );
+      }
+    } else if (activity.title.toLowerCase().includes('mariposa')) {
+      if (currentPlan === 'autocompasion') {
+        router.push('/actividades/abrazo');
+      } else {
+        Alert.alert(
+          "Actividad Exclusiva 🔒",
+          "El Abrazo de Mariposa es una técnica de regulación háptica exclusiva de la Ruta Autocompasión.\n\nPuedes cambiar tu ruta actual en la pantalla de Perfil para acceder a ella."
+        );
+      }
+    } else if (activity.title.toLowerCase().includes('botella')) {
+      if (currentPlan === 'soledad') {
+        router.push('/actividades/botella');
+      } else {
+        Alert.alert(
+          "Actividad Exclusiva 🔒",
+          "El Mensaje en una Botella es un espacio de conexión anónima, exclusivo de la Ruta Soledad.\n\nPuedes cambiar tu ruta actual en la pantalla de Perfil para acceder a ella."
+        );
+      }
     }
     // Other activities show a placeholder for now
   };
@@ -42,10 +97,18 @@ export default function ActividadesScreen() {
         topPriorityId = '6'; // Pomodoro de Paz
         break;
       case 'autocompasion':
+        topPriorityId = '9'; // Abrazo de Mariposa (Exclusive)
+        break;
       case 'descubrimiento':
-        topPriorityId = '5'; // Cápsula de Papel
+        topPriorityId = '7'; // Diario Ciego (Exclusive)
+        break;
+      case 'renacer':
+      case 'depresion':
+        topPriorityId = '8'; // Astillero de Victorias (Exclusive)
         break;
       case 'soledad':
+        topPriorityId = '10'; // Mensaje en una Botella (Exclusive)
+        break;
       case 'inseguridad':
         topPriorityId = '2'; // Diario Estelar
         break;
@@ -78,12 +141,30 @@ export default function ActividadesScreen() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        <Animated.View entering={FadeInUp.duration(400)}>
+        <Animated.View entering={FadeInUp.duration(400)} style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
           <SectionHeader
             title="Actividades"
             subtitle="Herramientas para tu bienestar emocional"
           />
+          {currentPlan === 'balance' && (
+            <Pressable 
+              onPress={() => useStore.getState().setMockLateNight(!mockLateNight)} 
+              style={{ padding: 8, backgroundColor: mockLateNight ? colors.primary : 'transparent', borderRadius: 8 }}
+            >
+              <Ionicons name="time-outline" size={24} color={mockLateNight ? '#FFF' : colors.textSecondary} />
+            </Pressable>
+          )}
         </Animated.View>
+
+        {(currentPlan === 'balance' && isLateNight) && (
+          <Animated.View entering={FadeInUp.duration(500)} style={styles.semaforoBanner}>
+             <Ionicons name="moon" size={24} color="#B39DDB" />
+             <View style={{flex: 1}}>
+               <Text style={styles.semaforoTitle}>Semáforo en Rojo</Text>
+               <Text style={styles.semaforoText}>Es tarde. El acceso a herramientas complejas está bloqueado para proteger tu descanso.</Text>
+             </View>
+          </Animated.View>
+        )}
 
         {/* Activity Cards — staggered animation */}
         {sortedActivities.map((activity, i) => (
@@ -103,9 +184,9 @@ export default function ActividadesScreen() {
 
         {/* Mascot at bottom */}
         <Animated.View entering={FadeInUp.duration(400).delay(500)} style={styles.mascotSection}>
-          <Mascot size={90} variant="meditating" />
+          <Mascot size={90} variant={(currentPlan === 'balance' && isLateNight) ? "sleeping" : "meditating"} />
           <Text style={[styles.mascotText, { color: colors.textLight }]}>
-            {mascotText}
+            {(currentPlan === 'balance' && isLateNight) ? "Es hora de soltar el día. Lumi ya está descansando 🌙" : mascotText}
           </Text>
         </Animated.View>
 
@@ -125,5 +206,28 @@ const styles = StyleSheet.create({
   mascotText: {
     fontSize: 13, textAlign: 'center',
     fontFamily: 'Poppins_400Regular',
+  },
+  semaforoBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(179, 157, 219, 0.15)',
+    padding: 16,
+    borderRadius: 16,
+    marginBottom: 24,
+    gap: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(179, 157, 219, 0.3)',
+  },
+  semaforoTitle: {
+    fontFamily: 'Poppins_600SemiBold',
+    fontSize: 16,
+    color: '#B39DDB',
+    marginBottom: 4,
+  },
+  semaforoText: {
+    fontFamily: 'Poppins_400Regular',
+    fontSize: 13,
+    color: '#A0AEC0',
+    lineHeight: 18,
   },
 });

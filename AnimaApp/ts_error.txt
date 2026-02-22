@@ -1,0 +1,2 @@
+app/actividades/astillero.tsx(10,25): error TS2305: Module '"../../components/ScreenWrapper"' has no exported member 'JewelButton'.
+app/actividades/astillero.tsx(115,88): error TS2339: Property 'border' does not exist on type '{ primary: string; primaryLight: string; secondary: string; accent: string; peach: string; mint: string; bgPrimary: string; bgSecondary: string; bgCard: string; bgCardSolid: string; textPrimary: string; ... 12 more ...; dreamText: string; }'.
