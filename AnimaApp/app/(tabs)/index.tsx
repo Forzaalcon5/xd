@@ -7,9 +7,8 @@ import { useRouter } from 'expo-router';
 import { Colors, Gradients, MoodConfig, DAILY_AFFIRMATIONS } from '../../constants/theme';
 import {
   GlassCard, MoodButton, JewelButton,
-  Mascot, SectionHeader, FeatureButton, FloatingParticles, AmbientButton, WeeklyProgressRing,
+  Mascot, SectionHeader, FeatureButton, FloatingParticles, AmbientButton, WeeklyProgressRing, MicroChallengeCard,
 } from '../../components/ui';
-import { ScreenWrapper } from '../../components/ScreenWrapper';
 import { useTheme } from '../../hooks/useTheme';
 import { useStore, MoodType } from '../../store/useStore';
 import { EMOTIONAL_ROUTES } from '../../constants/clinicalContent';
@@ -26,6 +25,7 @@ export default function HomeScreen() {
   const currentPlan = useStore((s) => s.currentPlan);
   const activeRoute = EMOTIONAL_ROUTES.find(r => r.id === currentPlan);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [showRouteInfo, setShowRouteInfo] = useState(false);
 
   const notificationsMock = [
     { id: '1', title: '¡Bienvenido a Anima!', desc: 'Nos alegra tenerte aquí. Recuerda revisar tu plan diario.', time: 'Hace 2h' },
@@ -49,8 +49,17 @@ export default function HomeScreen() {
 
   const moods: MoodType[] = ['animado', 'mejor', 'neutral', 'triste', 'muy_triste'];
 
+  const welcomeSubtitle = useMemo(() => {
+    switch (currentPlan) {
+      case 'ansiedad': return 'Respira profundo, estoy aquí contigo 🍃';
+      case 'soledad': return 'Me alegra mucho verte hoy 🫂';
+      case 'inseguridad': return 'Eres más fuerte de lo que crees 🌟';
+      default: return '¿En qué quieres trabajar hoy?';
+    }
+  }, [currentPlan]);
+
   return (
-    <ScreenWrapper style={styles.container}>
+    <View style={styles.container}>
       <FloatingParticles count={6} />
 
       <ScrollView
@@ -64,7 +73,7 @@ export default function HomeScreen() {
             <Text style={[styles.greeting, { color: colors.textPrimary }]} numberOfLines={1} adjustsFontSizeToFit>
               {greeting}, {userName || 'amigo/a'} 👋
             </Text>
-            <Text style={[styles.subtitle, { color: colors.textLight }]}>¿En qué quieres trabajar hoy?</Text>
+            <Text style={[styles.subtitle, { color: colors.textLight }]}>{welcomeSubtitle}</Text>
           </View>
           <View style={{ alignItems: 'center', gap: 4 }}>
             <Pressable 
@@ -92,16 +101,38 @@ export default function HomeScreen() {
 
         {/* Daily Affirmation (RF-16) & Active Route */}
         <Animated.View entering={FadeInUp.duration(400).delay(400)}>
-          <SectionHeader 
-            title={activeRoute ? `Tu ruta: ${activeRoute.title}` : "Frase del día"} 
-            subtitle="Tu inspiración diaria ✨" 
-          />
+          <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 16 }}>
+            <SectionHeader 
+              title={activeRoute ? `Tu ruta: ${activeRoute.title}` : "Frase del día"} 
+              subtitle="Tu inspiración diaria ✨" 
+              style={{ marginBottom: 0, flex: 1 }}
+            />
+            {activeRoute && (
+              <Pressable 
+                onPress={() => setShowRouteInfo(true)}
+                style={({ pressed }) => [{
+                  width: 40, height: 40, borderRadius: 20,
+                  backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)',
+                  alignItems: 'center', justifyContent: 'center',
+                  marginLeft: 10
+                }, pressed && { opacity: 0.7 }]}
+              >
+                <Ionicons name="ellipsis-horizontal" size={20} color={colors.textLight} />
+              </Pressable>
+            )}
+          </View>
           <GlassCard style={styles.affirmationCard}>
             <View style={styles.affirmationIconWrap}>
               <Ionicons name="sparkles" size={16} color={colors.accent} />
             </View>
             <Text style={[styles.affirmationText, { color: colors.textSecondary }]}>{affirmation}</Text>
           </GlassCard>
+        </Animated.View>
+
+        {/* Micro-Challenge Card (Dynamic Strategy Implementation) */}
+        <Animated.View entering={FadeInUp.duration(400).delay(450)}>
+          <SectionHeader title="Rompiendo el Bucle" subtitle="Tu micro-reto de hoy" />
+          <MicroChallengeCard />
         </Animated.View>
 
         {/* Mood Selector Card (RF-11, RF-20) */}
@@ -189,7 +220,45 @@ export default function HomeScreen() {
         </View>
       </Modal>
 
-    </ScreenWrapper>
+      {/* Route Info Modal */}
+      {activeRoute && (
+        <Modal visible={showRouteInfo} transparent animationType="fade" onRequestClose={() => setShowRouteInfo(false)}>
+          <View style={styles.modalOverlay}>
+            <Animated.View entering={FadeInUp.duration(300)} style={[styles.modalContent, { backgroundColor: colors.bgCard }]}>
+              <View style={[styles.modalHeader, { borderBottomWidth: 0, marginBottom: 10 }]}>
+                <View style={[styles.notifIconWrap, { backgroundColor: activeRoute.color + '20' }]}>
+                  <Ionicons name={activeRoute.icon as any} size={24} color={activeRoute.color} />
+                </View>
+                <Pressable onPress={() => setShowRouteInfo(false)} style={styles.closeBtn}>
+                  <Ionicons name="close" size={24} color={colors.textLight} />
+                </Pressable>
+              </View>
+              
+              <Text style={[styles.modalTitle, { color: colors.textPrimary, fontSize: 22 }]}>{activeRoute.title}</Text>
+              <Text style={[{ color: activeRoute.color, fontFamily: 'Poppins_600SemiBold', marginBottom: 16 }]}>{activeRoute.subtitle}</Text>
+              
+              <ScrollView style={{ maxHeight: 300 }} showsVerticalScrollIndicator={false}>
+                <Text style={[{ color: colors.textSecondary, marginBottom: 20, lineHeight: 22, fontFamily: 'Poppins_400Regular' }]}>{activeRoute.description}</Text>
+                
+                <Text style={[{ color: colors.textPrimary, fontFamily: 'Poppins_600SemiBold', marginBottom: 8 }]}>Área de Enfoque</Text>
+                <Text style={[{ color: colors.textSecondary, marginBottom: 16, fontFamily: 'Poppins_400Regular' }]}>{activeRoute.focusArea}</Text>
+
+                <Text style={[{ color: colors.textPrimary, fontFamily: 'Poppins_600SemiBold', marginBottom: 8 }]}>Estrategias</Text>
+                {activeRoute.strategies.map((strategy: string, i: number) => (
+                  <View key={i} style={{ flexDirection: 'row', alignItems: 'flex-start', marginBottom: 8, gap: 8 }}>
+                    <Ionicons name="checkmark-circle" size={18} color={activeRoute.color} style={{ marginTop: 2 }} />
+                    <Text style={[{ color: colors.textSecondary, flex: 1, fontFamily: 'Poppins_400Regular', lineHeight: 20 }]}>{strategy}</Text>
+                  </View>
+                ))}
+              </ScrollView>
+
+              <JewelButton title="Entendido" onPress={() => setShowRouteInfo(false)} style={{ marginTop: 24, width: '100%' }} />
+            </Animated.View>
+          </View>
+        </Modal>
+      )}
+
+    </View>
   );
 }
 

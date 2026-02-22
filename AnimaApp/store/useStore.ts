@@ -167,6 +167,8 @@ export const useStore = create<AppState>()(
         { id: '2', title: 'Diario Estelar', description: 'Escribe cosas positivas del día.', icon: 'journal-outline', color: '#FFD93D', gradient: ['#FFD200', '#F7971E'], duration: '10 min' },
         { id: '3', title: 'Relajación Progresiva', description: 'Libera la tensión de tu cuerpo.', icon: 'leaf-outline', color: '#C4B7EB', gradient: ['#E0C3FC', '#8EC5FC'], duration: '8 min' },
         { id: '4', title: 'Conexión 5 Sentidos', description: 'Atención plena interactiva para la ansiedad.', icon: 'planet-outline', color: '#A8E6CF', gradient: ['#D4FC79', '#96E6A1'], duration: '5 min' },
+        { id: '5', title: 'Cápsula de Papel', description: 'Desahoga y quema tus pensamientos negativos.', icon: 'flame-outline', color: '#FF7E67', gradient: ['#FF9A44', '#FC6076'], duration: 'Actividad libre' },
+        { id: '6', title: 'Pomodoro de Paz', description: 'Céntrate con descansos activos y sonidos de lluvia.', icon: 'timer-outline', color: '#4ADE80', gradient: ['#4ADE80', '#38BDF8'], duration: '25 min' },
       ],
       recentActivities: [
         { title: 'Respiración Guiada', time: 'Hoy • 5 min', detail: 'Relajaste', icon: 'water-outline', color: '#87CEEB' },

@@ -7,8 +7,10 @@ import Animated, {
   useSharedValue, useAnimatedStyle, withRepeat, withTiming,
   withSpring, withSequence, withDelay, Easing, FadeIn, FadeInUp,
   interpolate, interpolateColor, useAnimatedSensor, SensorType, useAnimatedProps,
+  cancelAnimation,
 } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useStore } from '../store/useStore';
 import { Ionicons } from '@expo/vector-icons';
 import Svg, { Circle, G } from 'react-native-svg'; // Added for Progress Ring
 import { Colors, Shadows, BorderRadius, Gradients, Typography, MoodConfig, MoodType } from '../constants/theme';
@@ -18,11 +20,22 @@ const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
 
 // Mascot images (RF-19)
 const MASCOT_IMAGES: Record<string, ImageSourcePropType> = {
+  // Legacy mappings for backwards compatibility
   happy: require('../assets/images/mascot/saludando.png'),
   greeting: require('../assets/images/mascot/saludando.png'),
-  empathetic: require('../assets/images/mascot/empatico.png'),
   breathing: require('../assets/images/mascot/respirando.png'),
-  meditating: require('../assets/images/mascot/meditando.png'),
+  
+  // New Enhanced Mappings
+  meditating: require('../assets/images/mascot/lumi-meditating.png'),
+  resting: require('../assets/images/mascot/lumi-resting.png'),
+  radar: require('../assets/images/mascot/lumi-radar.png'),
+  celebrating: require('../assets/images/mascot/lumi-celebrating.png'),
+  diary: require('../assets/images/mascot/lumi-diary.png'),
+  fire: require('../assets/images/mascot/lumi-fire.png'),
+  star: require('../assets/images/mascot/lumi-star .png'), // Keep space in filename based on user file list
+  confused: require('../assets/images/mascot/lumi-confused.png'),
+  empathetic: require('../assets/images/mascot/lumi-empatico.png'),
+  sleeping: require('../assets/images/mascot/Lumi-sleeping.png'),
 };
 
 
@@ -44,6 +57,23 @@ export const AuroraBackground = React.memo(function AuroraBackground() {
   const blob2Anim = useSharedValue(0);
   const blob3Anim = useSharedValue(0);
 
+  const currentPlan = useStore(s => s.currentPlan);
+
+  const getBlobColors = () => {
+    switch(currentPlan) {
+      case 'ansiedad': return ['#6FA8DC', '#8A9CD8', '#86BFC6']; 
+      case 'soledad':  return ['#A2C4E0', '#B0D2E6', '#BDE0EC']; 
+      case 'inseguridad': return ['#9BD1B3', '#9BD1C5', '#A2D19B']; 
+      case 'renacer': return ['#D1C49B', '#D1CC9B', '#D1BC9B'];
+      case 'autocompasion': return ['#D19EBB', '#D1A39B', '#D19BA8'];
+      case 'balance': return ['#9B9CD1', '#A99BD1', '#9BC7D1'];
+      case 'descubrimiento': return ['#9BD1AA', '#9BD1BD', '#A3D19B'];
+      default: return ['#5A99D4', '#9B8EC4', '#A8E6CF']; 
+    }
+  };
+
+  const [color1, color2, color3] = getBlobColors();
+
   useEffect(() => {
     blob1Anim.value = withRepeat(
       withSequence(
@@ -63,6 +93,12 @@ export const AuroraBackground = React.memo(function AuroraBackground() {
         withTiming(0, { duration: 5000, easing: Easing.inOut(Easing.ease) })
       ), -1, true
     );
+    
+    return () => {
+      cancelAnimation(blob1Anim);
+      cancelAnimation(blob2Anim);
+      cancelAnimation(blob3Anim);
+    };
   }, []);
 
   const style1 = useAnimatedStyle(() => {
@@ -102,9 +138,9 @@ export const AuroraBackground = React.memo(function AuroraBackground() {
 
   return (
     <View style={StyleSheet.absoluteFill} pointerEvents="none">
-      <Animated.View style={[styles.auroraBlob, isDark ? styles.blob1Dark : styles.blob1, style1]} />
-      <Animated.View style={[styles.auroraBlob, isDark ? styles.blob2Dark : styles.blob2, style2]} />
-      <Animated.View style={[styles.auroraBlob, isDark ? styles.blob3Dark : styles.blob3, style3]} />
+      <Animated.View style={[styles.auroraBlob, isDark ? styles.blob1Dark : styles.blob1, style1, { backgroundColor: color1 }]} />
+      <Animated.View style={[styles.auroraBlob, isDark ? styles.blob2Dark : styles.blob2, style2, { backgroundColor: color2 }]} />
+      <Animated.View style={[styles.auroraBlob, isDark ? styles.blob3Dark : styles.blob3, style3, { backgroundColor: color3 }]} />
       <View style={styles.frostOverlay} />
       {/* Stars for Moon Mode */}
       {isDark && <FloatingParticles count={15} />} 
@@ -225,13 +261,20 @@ interface ActivityCardProps {
   duration: string;
   onPress?: () => void;
   delay?: number;
+  isRecommended?: boolean;
 }
 
-export function ActivityCard({ title, description, icon, color, gradient, duration, onPress, delay = 0 }: ActivityCardProps) {
+export function ActivityCard({ title, description, icon, color, gradient, duration, onPress, delay = 0, isRecommended }: ActivityCardProps) {
   const { colors } = useTheme();
   return (
     <Animated.View entering={FadeInUp.duration(400).delay(delay)}>
-      <GlassCard onPress={onPress} style={styles.activityCard}>
+      <GlassCard onPress={onPress} style={[styles.activityCard, isRecommended && { borderColor: '#FFD700', borderWidth: 1 }] as any}>
+        {isRecommended && (
+          <View style={{ position: 'absolute', top: -12, right: 12, backgroundColor: '#FFD700', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12, zIndex: 10, flexDirection: 'row', alignItems: 'center', gap: 4, shadowColor: '#FFD700', shadowOpacity: 0.5, shadowRadius: 8, elevation: 5 }}>
+            <Ionicons name="star" size={12} color="#000" />
+            <Text style={{ fontSize: 10, fontFamily: 'Poppins_700Bold', color: '#000', textTransform: 'uppercase' }}>Recomendado</Text>
+          </View>
+        )}
         {gradient ? (
           <LinearGradient
             colors={gradient}
@@ -312,10 +355,10 @@ export function MoodButton({ mood, selected, onPress }: MoodButtonProps) {
 interface MascotProps {
   size?: number;
   style?: ViewStyle;
-  variant?: 'happy' | 'greeting' | 'empathetic' | 'breathing' | 'meditating';
+  variant?: 'happy' | 'greeting' | 'empathetic' | 'breathing' | 'meditating' | 'resting' | 'radar' | 'celebrating' | 'diary' | 'fire' | 'star' | 'confused' | 'sleeping';
 }
 
-export function Mascot({ size = 120, style, variant = 'happy' }: MascotProps) {
+const MascotComponent = ({ size = 120, style, variant = 'happy' }: MascotProps) => {
   const floatY = useSharedValue(0);
   const glow = useSharedValue(0);
   const breathScale = useSharedValue(1);
@@ -346,6 +389,12 @@ export function Mascot({ size = 120, style, variant = 'happy' }: MascotProps) {
         -1, true
       );
     }
+    
+    return () => {
+      cancelAnimation(floatY);
+      cancelAnimation(glow);
+      cancelAnimation(breathScale);
+    };
   }, [variant]);
 
   const floatStyle = useAnimatedStyle(() => ({
@@ -375,7 +424,9 @@ export function Mascot({ size = 120, style, variant = 'happy' }: MascotProps) {
       />
     </Animated.View>
   );
-}
+};
+
+export const Mascot = React.memo(MascotComponent);
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -466,6 +517,12 @@ function Particle({ index, initialX, initialY }: { index: number; initialX?: num
       ),
       -1
     ));
+    
+    return () => {
+      cancelAnimation(translateY);
+      cancelAnimation(translateX);
+      cancelAnimation(opacity);
+    };
   }, []);
 
   const style = useAnimatedStyle(() => ({
@@ -1016,4 +1073,101 @@ const styles = StyleSheet.create({
   ambientLabel: {
     fontSize: 11, fontWeight: '600', fontFamily: 'Poppins_600SemiBold',
   },
+  
+  // MicroChallengeCard
+  mcContainer: {
+    padding: 16, borderRadius: 20, marginBottom: 24,
+    borderWidth: 1, 
+    flexDirection: 'row', alignItems: 'center', gap: 14,
+  },
+  mcIconBox: {
+    width: 46, height: 46, borderRadius: 23,
+    justifyContent: 'center', alignItems: 'center',
+  },
+  mcContent: { flex: 1 },
+  mcTitle: {
+    fontSize: 14, fontWeight: '700', fontFamily: 'Poppins_700Bold',
+  },
+  mcDesc: {
+    fontSize: 13, fontFamily: 'Poppins_400Regular', marginTop: 2,
+  },
+  mcMetaRow: {
+    flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 6,
+  },
+  mcDuration: {
+    fontSize: 11, fontFamily: 'Poppins_500Medium',
+  },
+  mcCheckBtn: {
+    width: 32, height: 32, borderRadius: 16,
+    justifyContent: 'center', alignItems: 'center',
+    borderWidth: 2,
+  },
 });
+
+// ============================================================
+// MICRO-CHALLENGE CARD (Actionable routes)
+// ============================================================
+import { EMOTIONAL_ROUTES, MicroReto } from '../constants/clinicalContent';
+
+export function MicroChallengeCard() {
+  const { colors, isDark } = useTheme();
+  const currentPlan = useStore((s) => s.currentPlan);
+  const [completed, setCompleted] = React.useState(false);
+  
+  // Pick a stable random daily challenge based on route
+  const todaysChallenge = React.useMemo(() => {
+    const route = EMOTIONAL_ROUTES.find(r => r.id === currentPlan) || EMOTIONAL_ROUTES[0];
+    const dayOfYear = Math.floor((Date.now() - new Date(new Date().getFullYear(), 0, 0).getTime()) / 86400000);
+    return route.microRetos[dayOfYear % route.microRetos.length];
+  }, [currentPlan]);
+
+  const routeColor = EMOTIONAL_ROUTES.find(r => r.id === currentPlan)?.color || colors.primary;
+
+  const handleComplete = () => {
+    if (completed) return;
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    setCompleted(true);
+  };
+
+  if (!todaysChallenge) return null;
+
+  return (
+    <Animated.View entering={FadeInUp.duration(400).delay(200)}>
+      <View style={[styles.mcContainer, { 
+        backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)',
+        borderColor: completed ? routeColor : (isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)')
+      }]}>
+        
+        <View style={[styles.mcIconBox, { backgroundColor: routeColor + (completed ? '30' : '15') }]}>
+          <Ionicons name={todaysChallenge.icon as any} size={22} color={routeColor} />
+        </View>
+
+        <View style={styles.mcContent}>
+          <Text style={[styles.mcTitle, { color: completed ? routeColor : colors.textPrimary }]}>
+            {completed ? '¡Reto Completado!' : todaysChallenge.title}
+          </Text>
+          <Text style={[styles.mcDesc, { color: colors.textSecondary }]}>
+            {todaysChallenge.action}
+          </Text>
+          {!completed && (
+            <View style={styles.mcMetaRow}>
+              <Ionicons name="time-outline" size={14} color={colors.textLight} />
+              <Text style={[styles.mcDuration, { color: colors.textLight }]}>{todaysChallenge.duration}</Text>
+            </View>
+          )}
+        </View>
+
+        <Pressable 
+          onPress={handleComplete} 
+          style={[styles.mcCheckBtn, { 
+            borderColor: completed ? routeColor : colors.textLight,
+            backgroundColor: completed ? routeColor : 'transparent'
+          }]}
+        >
+          <Ionicons name="checkmark" size={18} color={completed ? '#FFF' : 'transparent'} />
+        </Pressable>
+
+      </View>
+    </Animated.View>
+  );
+}

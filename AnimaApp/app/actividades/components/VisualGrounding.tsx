@@ -8,7 +8,8 @@ import Animated, {
   withRepeat,
   withSequence,
   runOnJS,
-  FadeIn
+  FadeIn,
+  cancelAnimation
 } from 'react-native-reanimated';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { Ionicons } from '@expo/vector-icons';
@@ -37,6 +38,7 @@ export function VisualGrounding({ onComplete }: VisualGroundingProps) {
       -1,
       true
     );
+    return () => cancelAnimation(pulseScale);
   }, []);
 
   const pulseStyle = useAnimatedStyle(() => ({
@@ -95,6 +97,10 @@ function DraggableStar({ index, onCaught }: { index: number, onCaught: () => voi
   const offsetY = useSharedValue(0);
   const scale = useSharedValue(isCaught ? 0 : 1);
   const rotation = useSharedValue(0);
+
+  useEffect(() => {
+    return () => cancelAnimation(rotation);
+  }, []);
 
   const panGesture = Gesture.Pan()
     .onBegin(() => {

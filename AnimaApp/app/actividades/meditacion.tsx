@@ -8,7 +8,8 @@ import Animated, {
   withRepeat, 
   withTiming, 
   withSequence, 
-  Easing 
+  Easing,
+  cancelAnimation 
 } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -59,6 +60,7 @@ export default function MeditacionScreen() {
   useEffect(() => {
     return () => {
       SoundService.stopAmbient();
+      cancelAnimation(breatheScale);
     };
   }, []);
 

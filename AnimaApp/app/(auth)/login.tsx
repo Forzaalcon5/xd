@@ -3,7 +3,7 @@ import {
   View, Text, StyleSheet, TextInput, KeyboardAvoidingView,
   Platform, Pressable, ScrollView, ActivityIndicator, Dimensions,
 } from 'react-native';
-import Animated, { FadeIn, FadeOut, ZoomIn, FadeInUp, useSharedValue, useAnimatedStyle, withRepeat, withTiming, withSequence, Easing, interpolate } from 'react-native-reanimated';
+import Animated, { FadeIn, FadeOut, ZoomIn, FadeInUp, useSharedValue, useAnimatedStyle, withRepeat, withTiming, withSequence, Easing, interpolate, cancelAnimation } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -30,6 +30,7 @@ function FloatingOrb({ delay, color, size, top, left }: {
         withTiming(0, { duration: 3000 + delay, easing: Easing.inOut(Easing.ease) }),
       ), -1, true
     );
+    return () => cancelAnimation(anim);
   }, []);
 
   const orbStyle = useAnimatedStyle(() => ({
@@ -102,7 +103,7 @@ export default function LoginScreen() {
           <Animated.View entering={FadeInUp.duration(400)}>
             <GlassCard style={styles.loadingCard}>
               <View style={{ alignItems: 'center' }}>
-                <Mascot size={90} variant="happy" />
+                <Mascot size={90} variant="resting" />
                 <View style={styles.loadingDots}>
                   <ActivityIndicator size="small" color={colors.primary} />
                 </View>

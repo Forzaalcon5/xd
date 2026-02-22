@@ -5,7 +5,6 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Gradients, MoodConfig } from '../../constants/theme';
 import { GlassCard, SectionHeader, Mascot, FloatingParticles, JewelButton } from '../../components/ui';
-import { ScreenWrapper } from '../../components/ScreenWrapper';
 import { useTheme } from '../../hooks/useTheme';
 import { useStore, MoodType } from '../../store/useStore';
 
@@ -90,7 +89,7 @@ export default function RegistroScreen() {
   const dominantMood = getMostFrequentMood();
 
   return (
-    <ScreenWrapper style={styles.container}>
+    <View style={styles.container}>
       <FloatingParticles count={12} persistenceKey="journal_stars_pos_v2" />
 
       <ScrollView
@@ -193,7 +192,7 @@ export default function RegistroScreen() {
                 <View key={entry.id} style={styles.timelineItem}>
                   {/* Timeline spine */}
                   <View style={styles.timelineSpine}>
-                    <View style={[styles.timelineDot, { backgroundColor: config?.color || '#B8C4D0' }]}>
+                    <View style={styles.timelineDot}>
                       <View style={[styles.timelineDotInner, { backgroundColor: config?.color || '#B8C4D0' }]} />
                     </View>
                     {!isLast && <View style={styles.timelineConnector} />}
@@ -230,7 +229,7 @@ export default function RegistroScreen() {
         ) : (
           <Animated.View entering={FadeIn.duration(600).delay(400)}>
             <GlassCard style={styles.emptyCard}>
-              <Mascot size={100} variant="greeting" />
+              <Mascot size={100} variant="diary" />
               <Text style={[styles.emptyTitle, { color: colors.textPrimary }]}>¡Comienza tu viaje!</Text>
               <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
                 Registra cómo te sientes cada día y descubre patrones en tu bienestar emocional.
@@ -328,7 +327,7 @@ export default function RegistroScreen() {
         </KeyboardAvoidingView>
       </Modal>
 
-    </ScreenWrapper>
+    </View>
   );
 }
 

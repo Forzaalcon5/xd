@@ -9,8 +9,17 @@ export interface EmotionalRoute {
   color: string;
   focusArea: string;
   strategies: string[];
+  microRetos: MicroReto[];
   dailyQuotes: string[];
   image: any;
+}
+
+export interface MicroReto {
+  id: string;
+  title: string;
+  action: string;
+  duration: string;
+  icon: string;
 }
 
 export const EMOTIONAL_ROUTES: EmotionalRoute[] = [
@@ -29,6 +38,11 @@ export const EMOTIONAL_ROUTES: EmotionalRoute[] = [
       'Reescribir la narrativa de los hechos',
       'Mantener rutina mínima (sueño, comida, movimiento)',
       'Activación conductual: actuar primero, la motivación llegará después',
+    ],
+    microRetos: [
+      { id: 'ren1', title: 'Movimiento Mínimo', action: 'Ponte de pie, estira los brazos hacia el techo por 10 segundos y vuelve a sentarte.', duration: '< 1 min', icon: 'body-outline' },
+      { id: 'ren2', title: 'Hidratación', action: 'Sirve y bebe un vaso largo de agua fría.', duration: '1 min', icon: 'water-outline' },
+      { id: 'ren3', title: 'Cambio de Aire', action: 'Abre la ventana más cercana y respira el aire de afuera por 30 segundos.', duration: '< 1 min', icon: 'leaf-outline' },
     ],
     dailyQuotes: [
       'Hoy no necesitas tener ganas para empezar, solo dar el primer paso. 🌱',
@@ -55,6 +69,11 @@ export const EMOTIONAL_ROUTES: EmotionalRoute[] = [
       'Autocompasión activa y diálogo interno amable',
       'Contactar al menos a una persona de apoyo',
     ],
+    microRetos: [
+      { id: 'aut1', title: 'Abrazo Mariposa', action: 'Cruza tus brazos sobre el pecho y date unos golpecitos suaves en los hombros mientras respiras.', duration: '1 min', icon: 'heart-outline' },
+      { id: 'aut2', title: 'Mensaje de Apoyo', action: 'Escríbete a ti mismo(a) en tus notas: "Hice lo mejor que pude hoy, y está bien".', duration: '< 1 min', icon: 'pencil-outline' },
+      { id: 'aut3', title: 'Contacto Ligero', action: 'Envíale un meme o un video gracioso a un amigo, sin esperar respuesta inmediata.', duration: '2 min', icon: 'paper-plane-outline' },
+    ],
     dailyQuotes: [
       'El rechazo es una experiencia humana universal, no dice nada de tu valor personal. ❤️',
       'Háblate hoy como le hablarías a tu mejor amigo(a). Eres suficiente. 🫂',
@@ -79,6 +98,11 @@ export const EMOTIONAL_ROUTES: EmotionalRoute[] = [
       'Revisar y hacer valer límites (horarios laborales/académicos)',
       'Conversaciones claras sobre la carga mental',
       'Reducir tiempo en redes sociales para evitar comparaciones',
+    ],
+    microRetos: [
+      { id: 'bal1', title: 'Desconexión Express', action: 'Apaga la pantalla de tu teléfono o computadora, cierra los ojos y cuenta hasta 60.', duration: '1 min', icon: 'power-outline' },
+      { id: 'bal2', title: 'Estiramiento de Cuello', action: 'Gira suavemente el cuello de lado a lado para liberar la tensión acumulada.', duration: '< 1 min', icon: 'fitness-outline' },
+      { id: 'bal3', title: 'Anotar un Límite', action: 'Escribe en un papel algo a lo que necesites decir "No" esta semana.', duration: '2 min', icon: 'hand-left-outline' },
     ],
     dailyQuotes: [
       'Tus límites son la valla de seguridad alrededor de tu paz mental. 🚧',
@@ -105,6 +129,11 @@ export const EMOTIONAL_ROUTES: EmotionalRoute[] = [
       'Diferenciar entre culpa útil e inservible',
       'Analizar qué faltó estructuradamente (tiempo, método, apoyo)',
     ],
+    microRetos: [
+      { id: 'des1', title: 'Curiosidad Aleatoria', action: 'Busca en Google una palabra al azar o un tema que no conozcas y lee el primer párrafo.', duration: '3 min', icon: 'search-outline' },
+      { id: 'des2', title: 'Pausa Reflexiva', action: 'Mira a tu alrededor y encuentra 3 objetos de color verde. Nómbralos en voz alta.', duration: '< 1 min', icon: 'eye-outline' },
+      { id: 'des3', title: 'Diario Flash', action: 'Anota en tu teléfono una pregunta que tengas sobre tu futuro sin intentar responderla.', duration: '1 min', icon: 'book-outline' },
+    ],
     dailyQuotes: [
       'No necesitas el mapa entero, solo saber cuál es el siguiente paso. 🗺️',
       'Tu curiosidad es una brújula; escríbela hoy. ¿Qué atrapó tu atención? 📖',
@@ -129,6 +158,11 @@ export const EMOTIONAL_ROUTES: EmotionalRoute[] = [
       'Contactar a alguien, aunque sea con un mensaje corto',
       'Programar tiempo de calidad a solas (autocuidado activo)',
       'Buscar espacios comunitarios sin presión de interactuar',
+    ],
+    microRetos: [
+      { id: 'sol1', title: 'Conexión Sutil', action: 'Envíale un emoji (solo uno, como 👻 o 👽) a alguien con quien no hablas hace tiempo.', duration: '< 1 min', icon: 'chatbubble-outline' },
+      { id: 'sol2', title: 'Acompañamiento Sonoro', action: 'Pon tu canción favorita de fondo mientras haces otra actividad.', duration: '5 min', icon: 'musical-notes-outline' },
+      { id: 'sol3', title: 'Presencia de Mundo', action: 'Asómate por 1 minuto a ver pasar gente o autos. No estás solo en el planeta.', duration: '1 min', icon: 'planet-outline' },
     ],
     dailyQuotes: [
       'Tu valía no se mide por la cantidad de mensajes en tu teléfono hoy. 🌌',

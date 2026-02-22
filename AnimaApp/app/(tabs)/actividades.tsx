@@ -6,13 +6,13 @@ import { useRouter } from 'expo-router';
 import { Colors, Gradients } from '../../constants/theme';
 import { useTheme } from '../../hooks/useTheme';
 import { ActivityCard, SectionHeader, Mascot } from '../../components/ui';
-import { ScreenWrapper } from '../../components/ScreenWrapper';
 import { useStore } from '../../store/useStore';
 
 export default function ActividadesScreen() {
   const router = useRouter();
   const { colors, isDark } = useTheme();
   const activities = useStore((s) => s.activities);
+  const currentPlan = useStore((s) => s.currentPlan);
 
   const handleActivityPress = (activity: typeof activities[0]) => {
     if (activity.title.toLowerCase().includes('respiración')) {
@@ -23,12 +23,55 @@ export default function ActividadesScreen() {
       router.push('/actividades/relajacion');
     } else if (activity.title.toLowerCase().includes('sentidos')) {
       router.push('/actividades/grounding');
+    } else if (activity.title.toLowerCase().includes('cápsula')) {
+      router.push('/actividades/capsula');
+    } else if (activity.title.toLowerCase().includes('pomodoro')) {
+      router.push('/actividades/pomodoro');
     }
     // Other activities show a placeholder for now
   };
 
+  const sortedActivities = React.useMemo(() => {
+    let topPriorityId = '';
+    
+    switch (currentPlan) {
+      case 'ansiedad':
+        topPriorityId = '4'; // Conexión 5 Sentidos
+        break;
+      case 'balance':
+        topPriorityId = '6'; // Pomodoro de Paz
+        break;
+      case 'autocompasion':
+      case 'descubrimiento':
+        topPriorityId = '5'; // Cápsula de Papel
+        break;
+      case 'soledad':
+      case 'inseguridad':
+        topPriorityId = '2'; // Diario Estelar
+        break;
+      default:
+        topPriorityId = '1'; // Respiración
+        break;
+    }
+
+    return [...activities].sort((a, b) => {
+      if (a.id === topPriorityId) return -1;
+      if (b.id === topPriorityId) return 1;
+      return 0;
+    });
+  }, [activities, currentPlan]);
+
+  const mascotText = React.useMemo(() => {
+    switch (currentPlan) {
+      case 'ansiedad': return 'Un paso a la vez. Tú tienes el control 🍃';
+      case 'soledad': return 'No estás solo en esto. Hagamos algo juntos 🫂';
+      case 'inseguridad': return 'Cada pequeño logro cuenta. Tú puedes 🌟';
+      default: return 'Elige una actividad y encuentra tu calma interior ✨';
+    }
+  }, [currentPlan]);
+
   return (
-    <ScreenWrapper style={styles.container}>
+    <View style={styles.container}>
 
       <ScrollView
         style={styles.scroll}
@@ -43,7 +86,7 @@ export default function ActividadesScreen() {
         </Animated.View>
 
         {/* Activity Cards — staggered animation */}
-        {activities.map((activity, i) => (
+        {sortedActivities.map((activity, i) => (
           <ActivityCard
             key={activity.id}
             title={activity.title}
@@ -53,21 +96,22 @@ export default function ActividadesScreen() {
             gradient={activity.gradient}
             duration={activity.duration}
             delay={i * 100}
+            isRecommended={i === 0}
             onPress={() => handleActivityPress(activity)}
           />
         ))}
 
         {/* Mascot at bottom */}
         <Animated.View entering={FadeInUp.duration(400).delay(500)} style={styles.mascotSection}>
-          <Mascot size={90} variant="breathing" />
+          <Mascot size={90} variant="meditating" />
           <Text style={[styles.mascotText, { color: colors.textLight }]}>
-            Elige una actividad y encuentra tu calma interior ✨
+            {mascotText}
           </Text>
         </Animated.View>
 
         <View style={{ height: 100 }} />
       </ScrollView>
-    </ScreenWrapper>
+    </View>
   );
 }
 

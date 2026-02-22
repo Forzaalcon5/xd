@@ -20,10 +20,11 @@ export default function SelectPlanScreen() {
   const { colors, isDark } = useTheme();
   const setPlan = useStore((s) => s.setPlan);
   const userName = useStore((s) => s.userName);
+  const currentPlan = useStore((s) => s.currentPlan);
   const recommendedPlan = useStore((s) => s.recommendedPlan);
   
-  // Default to recommended plan if it exists
-  const [selectedId, setSelectedId] = useState<EmotionalRouteId | null>(recommendedPlan as EmotionalRouteId | null);
+  // Default to current plan if it exists, otherwise recommended
+  const [selectedId, setSelectedId] = useState<EmotionalRouteId | null>((currentPlan || recommendedPlan) as EmotionalRouteId | null);
   const [showDisclaimer, setShowDisclaimer] = useState(false);
 
   const handleConfirm = () => {
@@ -36,8 +37,10 @@ export default function SelectPlanScreen() {
   const selectedRoute = EMOTIONAL_ROUTES.find(r => r.id === selectedId);
   const recommendedRouteEntity = EMOTIONAL_ROUTES.find(r => r.id === recommendedPlan);
 
-  // Dynamic sorting to surface the recommended route as the first card in the carousel
+  // Dynamic sorting to surface the current route first, then the recommended route
   const displayRoutes = [...EMOTIONAL_ROUTES].sort((a, b) => {
+    if (a.id === currentPlan) return -1;
+    if (b.id === currentPlan) return 1;
     if (a.id === recommendedPlan) return -1;
     if (b.id === recommendedPlan) return 1;
     return 0;
@@ -94,12 +97,16 @@ export default function SelectPlanScreen() {
                       style={StyleSheet.absoluteFillObject}
                     />
 
-                    {/* Recommended Badge */}
-                    {recommendedPlan === route.id && (
+                    {/* Badges */}
+                    {currentPlan === route.id ? (
+                      <Animated.View entering={FadeInUp.delay(300)} style={[styles.recommendedBadge, { backgroundColor: 'rgba(56, 189, 248, 0.95)' }]}>
+                        <Text style={styles.recommendedBadgeText}> Tu ruta actual</Text>
+                      </Animated.View>
+                    ) : recommendedPlan === route.id ? (
                       <Animated.View entering={FadeInUp.delay(300)} style={styles.recommendedBadge}>
                         <Text style={styles.recommendedBadgeText}>✨ Recomendado para ti</Text>
                       </Animated.View>
-                    )}
+                    ) : null}
 
                     {/* Card Content Floating */}
                     <View style={styles.cardContent}>

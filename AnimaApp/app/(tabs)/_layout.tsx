@@ -44,10 +44,11 @@ export default function TabsLayout() {
   const { colors, isDark } = useTheme(); // NEW
 
   return (
-    <Tabs
-      screenOptions={{
-        headerShown: false,
-        tabBarActiveTintColor: isDark ? Colors.primary : Colors.primary, // Keep primary or adjust for dark
+      <Tabs
+        screenOptions={{
+          sceneStyle: { backgroundColor: 'transparent' },
+          headerShown: false,
+          tabBarActiveTintColor: isDark ? Colors.primary : Colors.primary, // Keep primary or adjust for dark
         tabBarInactiveTintColor: isDark ? colors.textLight : Colors.textLight,
         tabBarStyle: {
           position: 'absolute',

@@ -6,7 +6,7 @@ import {
 import Animated, {
   FadeInUp, FadeIn, FadeOut, ZoomIn, FadeInDown,
   useSharedValue, useAnimatedStyle, withRepeat, withTiming,
-  withSequence, Easing, interpolate,
+  withSequence, Easing, interpolate, cancelAnimation
 } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -31,6 +31,7 @@ function FloatingOrb({ delay, color, size, top, left }: {
         withTiming(0, { duration: 3000 + delay, easing: Easing.inOut(Easing.ease) }),
       ), -1, true
     );
+    return () => cancelAnimation(anim);
   }, []);
 
   const orbStyle = useAnimatedStyle(() => ({
@@ -116,7 +117,7 @@ export default function RegisterScreen() {
           <Animated.View entering={FadeInUp.duration(400)}>
             <GlassCard style={styles.loadingCard}>
               <View style={{ alignItems: 'center' }}>
-                <Mascot size={90} variant="happy" />
+                <Mascot size={90} variant="star" />
                 <View style={styles.loadingDots}>
                   <ActivityIndicator size="small" color={colors.primary} />
                 </View>
@@ -146,7 +147,7 @@ export default function RegisterScreen() {
 
           {/* Mascot */}
           <Animated.View entering={FadeIn.duration(700)} style={styles.mascotSection}>
-            <Mascot size={110} variant="happy" />
+            <Mascot size={110} variant="greeting" />
           </Animated.View>
 
           {/* Title */}

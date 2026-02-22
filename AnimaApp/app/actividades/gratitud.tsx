@@ -24,6 +24,7 @@ import Animated, {
   FadeInDown,
   FadeInUp,
   interpolate,
+  cancelAnimation,
 } from 'react-native-reanimated';
 import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -76,6 +77,12 @@ function FloatingStar({ entry, index, containerWidth, containerHeight, onLongPre
       ),
       -1, true
     );
+    
+    return () => {
+      cancelAnimation(rotation);
+      cancelAnimation(glowOpacity);
+      cancelAnimation(scale);
+    };
   }, []);
 
   const clampX = containerWidth ? containerWidth / 2 - 30 : 100;

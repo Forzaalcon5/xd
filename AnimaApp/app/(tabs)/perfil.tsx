@@ -6,7 +6,6 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { Colors, Gradients, MoodConfig, Shadows } from '../../constants/theme';
 import { GlassCard, SectionHeader, Mascot, JewelButton } from '../../components/ui';
-import { ScreenWrapper } from '../../components/ScreenWrapper';
 import { useStore, MoodType } from '../../store/useStore';
 import { useTheme } from '../../hooks/useTheme';
 import { SoundService } from '../../utils/SoundService'; 
@@ -59,6 +58,7 @@ export default function PerfilScreen() {
   };
 
   const settingsItems = [
+    { icon: 'compass-outline', label: 'Cambiar Mi Ruta', color: '#FCD34D', type: 'link', action: () => router.replace('/(onboarding)/select-plan') },
     { icon: 'notifications-outline', label: 'Notificaciones', color: colors.primary, type: 'toggle', action: () => toggleNotifications(!notificationsEnabled), active: notificationsEnabled },
     { icon: 'alert-circle-outline', label: 'Probar Notificación', color: colors.accent, type: 'link', action: async () => { 
         Alert.alert('¡Prueba iniciada!', 'Sal de la app ahora. La notificación llegará en 5 segundos.');
@@ -71,7 +71,7 @@ export default function PerfilScreen() {
   ];
 
   return (
-    <ScreenWrapper style={styles.container}>
+    <View style={styles.container}>
       <ScrollView
         style={styles.scroll}
         contentContainerStyle={styles.scrollContent}
@@ -172,7 +172,7 @@ export default function PerfilScreen() {
 
         {/* Footer info */}
         <View style={styles.footerSection}>
-          <Mascot size={60} variant="happy" />
+          <Mascot size={60} variant="star" />
           <Text style={[styles.versionText, { color: colors.textLight }]}>Aníma v1.0.2 • Build 2026</Text>
         </View>
 
@@ -292,7 +292,7 @@ export default function PerfilScreen() {
         </View>
       </Modal>
 
-    </ScreenWrapper>
+    </View>
   );
 }
 

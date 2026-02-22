@@ -4,17 +4,19 @@ import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withRepeat,
-  withTiming,
   withSequence,
+  withTiming,
   withDelay,
   Easing,
   interpolate,
   useAnimatedSensor,
   SensorType,
+  cancelAnimation,
   withSpring,
 } from 'react-native-reanimated';
 import { Colors } from '../constants/theme';
-import { CURRENT_CONFIG } from '../utils/devicePerformance'; // ADDED
+import { useStore } from '../store/useStore';
+import { CURRENT_CONFIG } from '../utils/devicePerformance'; 
 
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
 
@@ -34,11 +36,13 @@ const ShootingStar = React.memo(() => {
   const screenWidth = Dimensions.get('window').width;
 
   useEffect(() => {
+    let timeoutId: ReturnType<typeof setTimeout>;
+    
     const triggerShootingStar = () => {
       // Random delay between 15s and 45s
       const nextDelay = Math.random() * 30000 + 15000;
       
-      setTimeout(() => {
+      timeoutId = setTimeout(() => {
         // Reset position
         const startX = Math.random() * screenWidth;
         const startY = Math.random() * (SCREEN_H * 0.4); // Top 40%
@@ -61,6 +65,8 @@ const ShootingStar = React.memo(() => {
     };
 
     triggerShootingStar();
+    
+    return () => clearTimeout(timeoutId);
   }, []);
 
   const style = useAnimatedStyle(() => ({
@@ -139,7 +145,24 @@ export const AuroraBackgroundDark = React.memo(function AuroraBackgroundDark() {
   const blob1Anim = useSharedValue(0); 
   const blob2Anim = useSharedValue(0); 
   const blob3Anim = useSharedValue(0); 
-  
+
+  const currentPlan = useStore(s => s.currentPlan);
+
+  const getBlobColors = () => {
+    switch(currentPlan) {
+      case 'ansiedad': return ['#6FA8DC', '#8A9CD8', '#86BFC6']; 
+      case 'soledad':  return ['#8CB4D6', '#99C2E0', '#A6D0EA']; 
+      case 'inseguridad': return ['#9BD1B3', '#9BD1C5', '#A2D19B']; 
+      case 'renacer': return ['#D1C49B', '#D1CC9B', '#D1BC9B'];
+      case 'autocompasion': return ['#D19EBB', '#D1A39B', '#D19BA8'];
+      case 'balance': return ['#9B9CD1', '#A99BD1', '#9BC7D1'];
+      case 'descubrimiento': return ['#9BD1AA', '#9BD1BD', '#A3D19B'];
+      default: return ['#5A99D4', '#9B8EC4', '#A8E6CF']; 
+    }
+  };
+
+  const [color1, color2, color3] = getBlobColors();
+
   // PARALLAX SENSOR
   // Only enable if high performance config allows it (or just always for now as it's optimized)
   const sensor = useAnimatedSensor(SensorType.GYROSCOPE, { interval: 50 });
@@ -186,6 +209,12 @@ export const AuroraBackgroundDark = React.memo(function AuroraBackgroundDark() {
         withTiming(0, { duration: DURATION_BASE, easing: Easing.inOut(Easing.quad) })
       ), -1, true
     );
+    
+    return () => {
+      cancelAnimation(blob1Anim);
+      cancelAnimation(blob2Anim);
+      cancelAnimation(blob3Anim);
+    };
   }, []);
 
   const style1 = useAnimatedStyle(() => ({
@@ -227,13 +256,13 @@ export const AuroraBackgroundDark = React.memo(function AuroraBackgroundDark() {
       <ShootingStar />
 
       {/* Blob 1: Blue/Primary (Top Left) */}
-      <Animated.View style={[styles.blobBase, styles.blob1, style1]} />
+      <Animated.View style={[styles.blobBase, styles.blob1, style1, { backgroundColor: color1 }]} />
       
       {/* Blob 2: Lavender/Secondary (Bottom Right) */}
-      <Animated.View style={[styles.blobBase, styles.blob2, style2]} />
+      <Animated.View style={[styles.blobBase, styles.blob2, style2, { backgroundColor: color2 }]} />
       
       {/* Blob 3: Subtle Warmth/Accent (Center/Top) */}
-      <Animated.View style={[styles.blobBase, styles.blob3, style3]} />
+      <Animated.View style={[styles.blobBase, styles.blob3, style3, { backgroundColor: color3 }]} />
       
       <View style={styles.vignette} />
     </View>
@@ -248,21 +277,21 @@ const styles = StyleSheet.create({
   blob1: {
     width: SCREEN_W * 1.2,
     height: SCREEN_W * 1.2,
-    backgroundColor: '#5B9BD5', // Blue
+    backgroundColor: '#5A99D4', 
     top: -SCREEN_W * 0.4,
     left: -SCREEN_W * 0.3,
   },
   blob2: {
     width: SCREEN_W * 1.1,
     height: SCREEN_W * 1.1,
-    backgroundColor: '#9B8EC4', // Lavender
+    backgroundColor: '#9B8EC4', 
     bottom: -SCREEN_W * 0.3,
     right: -SCREEN_W * 0.2,
   },
   blob3: {
     width: SCREEN_W * 0.8,
     height: SCREEN_W * 0.8,
-    backgroundColor: '#A8E6CF', // Mint (or F7C97E for gold if preferred, stick to cool tones per request)
+    backgroundColor: '#A8E6CF', 
     top: SCREEN_H * 0.3,
     left: SCREEN_W * 0.1,
   },

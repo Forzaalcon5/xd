@@ -4,7 +4,6 @@ import { Audio } from 'expo-av';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, { FadeIn, useSharedValue, useAnimatedStyle, withTiming } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
-import { GlassCard } from '../../../components/ui';
 
 // Local mapping to avoid circular dependencies with SoundService for this specific mix puzzle
 const TRACKS = [
@@ -98,7 +97,7 @@ export function AuralGrounding({ onComplete }: AuralGroundingProps) {
         return (
           <Animated.View key={track.id} entering={FadeIn.delay(i * 150)}>
             <Pressable onPress={() => toggleTrack(track.id)}>
-              <GlassCard intensity={isActive ? 30 : 10} style={[styles.card, !isActive && styles.cardDisabled] as any}>
+              <View style={[styles.card, !isActive && styles.cardDisabled, { backgroundColor: 'rgba(255,255,255,0.05)' }]}>
                 <View style={styles.row}>
                   <View style={[styles.iconBox, isActive ? styles.iconActive : styles.iconMuted]}>
                     <Ionicons name={track.icon as any} size={24} color={isActive ? '#FFFFFF' : 'rgba(255,255,255,0.4)'} />
@@ -111,7 +110,7 @@ export function AuralGrounding({ onComplete }: AuralGroundingProps) {
                     </View>
                   </View>
                 </View>
-              </GlassCard>
+              </View>
             </Pressable>
           </Animated.View>
         );

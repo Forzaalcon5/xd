@@ -14,8 +14,8 @@ LogBox.ignoreLogs(['expo-notifications: Android Push notifications', 'Failed to 
 
 // Prevent native splash from auto-hiding (font loading)
 SplashScreen.preventAutoHideAsync().catch(() => {});
-
 import { ThemeProvider } from '../context/ThemeContext';
+import { RootBackground } from '../components/RootBackground';
 
 function AppLayout() {
   const [showSplash, setShowSplash] = useState(true);
@@ -113,7 +113,9 @@ function AppLayout() {
 export default function RootLayout() {
   return (
     <ThemeProvider>
-      <AppLayout />
+      <RootBackground>
+        <AppLayout />
+      </RootBackground>
     </ThemeProvider>
   );
 }

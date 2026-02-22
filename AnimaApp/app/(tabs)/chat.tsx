@@ -9,25 +9,47 @@ import { Ionicons } from '@expo/vector-icons';
 import { Colors, Gradients } from '../../constants/theme';
 import { useTheme } from '../../hooks/useTheme';
 import { ChatBubble, TypingIndicator, GlassCard, Mascot } from '../../components/ui';
-import { ScreenWrapper } from '../../components/ScreenWrapper';
 import { useStore } from '../../store/useStore';
 
 const mascotAvatar = require('../../assets/images/mascot/empatico.png');
-
-const QUICK_REPLIES = [
-  'Me siento ansioso/a 😟',
-  'Estoy bien hoy 😊',
-  'Necesito hablar 💙',
-  'Quiero relajarme 🍃',
-];
 
 export default function ChatScreen() {
   const { colors, isDark } = useTheme(); // NEW
   const messages = useStore((s) => s.messages);
   const isTyping = useStore((s) => s.isTyping);
   const sendMessage = useStore((s) => s.sendMessage);
+  const currentPlan = useStore((s) => s.currentPlan);
   const [input, setInput] = useState('');
   const scrollRef = useRef<ScrollView>(null);
+
+  const chatConfig = React.useMemo(() => {
+    switch(currentPlan) {
+      case 'ansiedad':
+        return {
+          title: 'Respira, estás a salvo 💙',
+          subtitle: 'Estoy aquí para escucharte y ayudarte a bajar el ritmo. ¿Qué sientes en tu cuerpo ahora mismo?',
+          replies: ['Siento opresión en el pecho 😟', 'No puedo dejar de pensar 🌀', 'Ayúdame a respirar 🍃']
+        };
+      case 'soledad':
+        return {
+          title: 'Estoy aquí contigo 🫂',
+          subtitle: 'Me alegra muchísimo verte. No tienes que pasar por esto sin compañía.',
+          replies: ['Me siento muy solo/a 💔', 'Quiero hablar un rato 🗣️', 'Solo hazme compañía ✨']
+        };
+      case 'inseguridad':
+        return {
+          title: 'Creo en ti 🌟',
+          subtitle: 'Incluso cuando tú dudas, yo sé de lo que eres capaz. ¿Qué te tiene dudando hoy?',
+          replies: ['Tengo miedo de fallar 😥', 'Siento que no soy suficiente 📉', 'Recuérdame algo bueno ⭐']
+        };
+      default:
+        return {
+          title: '¡Hola! Soy Lumi 💙',
+          subtitle: 'Estoy aquí para acompañarte. Puedes contarme cómo te sientes o elegir una opción rápida.',
+          replies: ['Me siento ansioso/a 😟', 'Estoy bien hoy 😊', 'Necesito hablar 💙', 'Quiero relajarme 🍃']
+        };
+    }
+  }, [currentPlan]);
 
   const handleSend = () => {
     const text = input.trim();
@@ -45,7 +67,7 @@ export default function ChatScreen() {
   };
 
   return (
-    <ScreenWrapper style={styles.container}>
+    <View style={styles.container}>
 
       {/* Header */}
       <View style={[styles.header, { borderBottomColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.04)' }]}>
@@ -55,7 +77,7 @@ export default function ChatScreen() {
           <View style={styles.onlineDot} />
         </View>
         <View style={{ flex: 1 }}>
-          <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>Aníma</Text>
+          <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>Lumi</Text>
           <Text style={[styles.headerStatus, { color: colors.textLight }]}>
             {isTyping ? 'Escribiendo...' : 'Tu compañero emocional'}
           </Text>
@@ -78,14 +100,14 @@ export default function ChatScreen() {
           {messages.length === 0 && (
             <Animated.View entering={FadeIn.duration(600)} style={styles.welcomeSection}>
               <Mascot size={100} variant="empathetic" />
-              <Text style={[styles.welcomeTitle, { color: colors.textPrimary }]}>¡Hola! Soy Aníma 💙</Text>
+              <Text style={[styles.welcomeTitle, { color: colors.textPrimary }]}>{chatConfig.title}</Text>
               <Text style={[styles.welcomeText, { color: colors.textSecondary }]}>
-                Estoy aquí para acompañarte. Puedes contarme cómo te sientes o elegir una opción rápida.
+                {chatConfig.subtitle}
               </Text>
 
               {/* Quick Reply Chips */}
               <View style={styles.quickReplies}>
-                {QUICK_REPLIES.map((text, i) => (
+                {chatConfig.replies.map((text, i) => (
                   <Animated.View key={i} entering={FadeInUp.delay(300 + i * 100).duration(300)}>
                     <Pressable 
                       style={[
@@ -157,7 +179,7 @@ export default function ChatScreen() {
           </Pressable>
         </View>
       </KeyboardAvoidingView>
-    </ScreenWrapper>
+    </View>
   );
 }
 
