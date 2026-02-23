@@ -44,6 +44,7 @@ interface AppState {
   isAuthenticated: boolean;
   userName: string;
   userEmail: string;
+  profileAvatar: string | null;
   showSplash: boolean;
   notificationsEnabled: boolean;
   
@@ -74,6 +75,7 @@ interface AppState {
   // Actions
   login: (email: string, name: string) => void;
   updateUser: (name: string) => void;
+  setProfileAvatar: (avatarId: string | null) => void;
   logout: () => void;
   hideSplash: () => void;
   toggleNotifications: (enabled: boolean) => void;
@@ -146,6 +148,7 @@ export const useStore = create<AppState>()(
       isAuthenticated: false,
       userName: '',
       userEmail: '',
+      profileAvatar: null,
       showSplash: true,
       notificationsEnabled: true,
       
@@ -180,7 +183,7 @@ export const useStore = create<AppState>()(
         { id: '7', title: 'Diario Ciego', description: 'Escribe sin censura ni edición. Tus palabras desaparecerán solas.', icon: 'eye-off-outline', color: '#B39DDB', gradient: ['#D1C4E9', '#9575CD'], duration: 'Ruta Descubrimiento' },
         { id: '8', title: 'Astillero de Victorias', description: 'Avanza tu barco celebrando cada pequeño paso.', icon: 'boat-outline', color: '#FFB74D', gradient: ['#FFE082', '#FF8A65'], duration: 'Ruta Renacer' },
         { id: '9', title: 'Abrazo de Mariposa', description: 'Estimulación bilateral para calmar tu sistema nervioso.', icon: 'heart-half-outline', color: '#F48FB1', gradient: ['#FFCDD2', '#F06292'], duration: 'Ruta Autocompasión' },
-        { id: '10', title: 'Mensaje en una Botella', description: 'Lanza un mensaje al mar y recibe aliento anónimo.', icon: 'flask-outline', color: '#4FC3F7', gradient: ['#81D4FA', '#29B6F6'], duration: 'Ruta Soledad' },
+        { id: '10', title: 'Mensaje en una Botella', description: 'Lanza un mensaje al mar y recibe aliento anónimo.', icon: 'paper-plane-outline', color: '#4FC3F7', gradient: ['#81D4FA', '#29B6F6'], duration: 'Ruta Soledad' },
       ],
       recentActivities: [
         { title: 'Respiración Guiada', time: 'Hoy • 5 min', detail: 'Relajaste', icon: 'water-outline', color: '#87CEEB' },
@@ -189,9 +192,10 @@ export const useStore = create<AppState>()(
       // Actions
       login: (email, name) => set({ isAuthenticated: true, userEmail: email, userName: name || 'Usuario' }),
       updateUser: (name) => set({ userName: name }),
+      setProfileAvatar: (avatarId) => set({ profileAvatar: avatarId }),
       logout: () => {
         SoundService.stopAmbient();
-        set({ isAuthenticated: false, userName: '', userEmail: '', messages: [], currentPlan: null });
+        set({ isAuthenticated: false, userName: '', userEmail: '', profileAvatar: null, messages: [], currentPlan: null });
       },
       hideSplash: () => set({ showSplash: false }),
       toggleNotifications: (enabled: boolean) => {

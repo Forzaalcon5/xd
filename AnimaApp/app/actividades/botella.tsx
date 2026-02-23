@@ -129,8 +129,7 @@ export default function BotellaScreen() {
           <Animated.View style={[styles.oceanSimulator, waveStyle]}>
              {phase === 'write' || phase === 'sending' ? (
                 <Animated.View style={[styles.bottleIconWrap, throwStyle]}>
-                  <Ionicons name="flask" size={64} color="#38BDF8" style={styles.bottleDropShadow} />
-                  <Ionicons name="mail" size={24} color="#FFF" style={{ position: 'absolute', top: 24, opacity: 0.8 }} />
+                  <Ionicons name="paper-plane" size={64} color="#38BDF8" style={styles.bottleDropShadow} />
                 </Animated.View>
              ) : null}
 
@@ -143,8 +142,7 @@ export default function BotellaScreen() {
 
              {phase === 'received' || phase === 'waiting' && recvBottleOpacity.value > 0 ? (
                 <Animated.View style={[styles.bottleIconWrap, receiveStyle]}>
-                  <Ionicons name="flask" size={64} color="#4ADE80" style={styles.bottleDropShadow} />
-                  <Ionicons name="heart" size={24} color="#FFF" style={{ position: 'absolute', top: 24, opacity: 0.8 }} />
+                  <Ionicons name="mail-open" size={64} color="#4ADE80" style={styles.bottleDropShadow} />
                 </Animated.View>
              ) : null}
           </Animated.View>

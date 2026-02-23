@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, Alert, Modal, TextInput, KeyboardAvoidingView, Platform } from 'react-native';
+import React, { useState, useCallback } from 'react';
+import { View, Text, StyleSheet, ScrollView, Pressable, Alert, Modal, TextInput, KeyboardAvoidingView, Platform, Image, FlatList } from 'react-native';
 import Animated, { FadeInUp, FadeInDown } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -11,6 +11,7 @@ import { useTheme } from '../../hooks/useTheme';
 import { SoundService } from '../../utils/SoundService'; 
 import { NotificationService } from '../../utils/NotificationService';
 import { CLINICAL_DISCLAIMER } from '../../constants/clinicalContent';
+import { AVATAR_CATEGORIES, getAvatarSource, AvatarItem } from '../../constants/avatars';
 
 export default function PerfilScreen() {
   const router = useRouter();
@@ -22,8 +23,13 @@ export default function PerfilScreen() {
   const notificationsEnabled = useStore((s) => s.notificationsEnabled);
   const toggleNotifications = useStore((s) => s.toggleNotifications);
 
+  const profileAvatar = useStore((s) => s.profileAvatar);
+  const setProfileAvatar = useStore((s) => s.setProfileAvatar);
+
   const [isEditing, setIsEditing] = useState(false);
   const [newName, setNewName] = useState('');
+  const [showAvatarPicker, setShowAvatarPicker] = useState(false);
+  const [avatarCategory, setAvatarCategory] = useState(0);
   
   const [showPrivacy, setShowPrivacy] = useState(false);
   const [showInvite, setShowInvite] = useState(false);
@@ -59,6 +65,13 @@ export default function PerfilScreen() {
     }
   };
 
+  const handleSelectAvatar = useCallback((avatarId: string) => {
+    setProfileAvatar(avatarId);
+    setShowAvatarPicker(false);
+  }, [setProfileAvatar]);
+
+  const avatarSource = getAvatarSource(profileAvatar);
+
   const configItems = [
     { icon: 'compass-outline', label: 'Cambiar Mi Ruta', color: '#FCD34D', type: 'link', action: () => router.replace('/(onboarding)/select-plan') },
     { icon: 'moon-outline', label: 'Modo Lunar', color: colors.secondary, type: 'toggle', action: toggleTheme, active: isDark },
@@ -88,18 +101,22 @@ export default function PerfilScreen() {
           <View style={styles.avatarContainer}>
              <View style={styles.avatarGlow} />
              <LinearGradient colors={['#FFF', '#F0F6FF']} style={styles.avatarBorder}>
-                <LinearGradient 
-                  colors={[Colors.primary, Colors.secondary]} 
-                  style={styles.avatarFill}
-                  start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
-                >
-                  <Text style={styles.avatarLetter}>
-                    {(userName || 'U').charAt(0).toUpperCase()}
-                  </Text>
-                </LinearGradient>
+               {avatarSource ? (
+                 <Image source={avatarSource} style={styles.avatarImage} />
+               ) : (
+                 <LinearGradient 
+                   colors={[Colors.primary, Colors.secondary]} 
+                   style={styles.avatarFill}
+                   start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+                 >
+                   <Text style={styles.avatarLetter}>
+                     {(userName || 'U').charAt(0).toUpperCase()}
+                   </Text>
+                 </LinearGradient>
+               )}
              </LinearGradient>
-             <Pressable style={styles.editBadge} onPress={openEditModal}>
-                <Ionicons name="pencil" size={14} color="#FFF" />
+             <Pressable style={styles.editBadge} onPress={() => setShowAvatarPicker(true)}>
+                <Ionicons name="camera" size={14} color="#FFF" />
              </Pressable>
           </View>
           
@@ -347,6 +364,82 @@ export default function PerfilScreen() {
         </View>
       </Modal>
 
+      {/* Avatar Picker Modal */}
+      <Modal visible={showAvatarPicker} transparent animationType="slide" onRequestClose={() => setShowAvatarPicker(false)}>
+        <View style={styles.modalOverlay}>
+          <View style={[styles.avatarPickerContent, { backgroundColor: colors.bgCard }]}>
+            <View style={styles.modalHeader}>
+              <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>Elige tu Avatar</Text>
+              <Pressable onPress={() => setShowAvatarPicker(false)}>
+                <Ionicons name="close" size={24} color={colors.textLight} />
+              </Pressable>
+            </View>
+
+            {/* Category Tabs */}
+            <View style={styles.categoryTabs}>
+              {AVATAR_CATEGORIES.map((cat, idx) => (
+                <Pressable
+                  key={cat.title}
+                  onPress={() => setAvatarCategory(idx)}
+                  style={[
+                    styles.categoryTab,
+                    avatarCategory === idx && { backgroundColor: Colors.primary + '20', borderColor: Colors.primary },
+                  ]}
+                >
+                  <Ionicons 
+                    name={cat.icon as any} 
+                    size={18} 
+                    color={avatarCategory === idx ? Colors.primary : colors.textLight} 
+                  />
+                  <Text style={[
+                    styles.categoryTabText, 
+                    { color: avatarCategory === idx ? Colors.primary : colors.textLight }
+                  ]}>{cat.title}</Text>
+                </Pressable>
+              ))}
+            </View>
+
+            {/* Avatar Grid */}
+            <FlatList
+              data={AVATAR_CATEGORIES[avatarCategory].data}
+              keyExtractor={(item) => item.id}
+              numColumns={4}
+              contentContainerStyle={{ paddingBottom: 20 }}
+              columnWrapperStyle={{ gap: 12, justifyContent: 'center' }}
+              ItemSeparatorComponent={() => <View style={{ height: 12 }} />}
+              renderItem={({ item }) => (
+                <Pressable
+                  onPress={() => handleSelectAvatar(item.id)}
+                  style={({ pressed }) => [
+                    styles.avatarGridItem,
+                    profileAvatar === item.id && styles.avatarGridItemActive,
+                    pressed && { opacity: 0.7, transform: [{ scale: 0.95 }] },
+                  ]}
+                >
+                  <Image source={item.source} style={styles.avatarGridImage} />
+                  {profileAvatar === item.id && (
+                    <View style={styles.avatarCheckBadge}>
+                      <Ionicons name="checkmark" size={14} color="#FFF" />
+                    </View>
+                  )}
+                </Pressable>
+              )}
+            />
+
+            {/* Remove avatar option */}
+            {profileAvatar && (
+              <Pressable
+                onPress={() => { setProfileAvatar(null); setShowAvatarPicker(false); }}
+                style={styles.removeAvatarBtn}
+              >
+                <Ionicons name="trash-outline" size={16} color="#E53E3E" />
+                <Text style={styles.removeAvatarText}>Quitar foto de perfil</Text>
+              </Pressable>
+            )}
+          </View>
+        </View>
+      </Modal>
+
     </View>
   );
 }
@@ -368,10 +461,13 @@ const styles = StyleSheet.create({
   },
   avatarBorder: {
     width: 100, height: 100, borderRadius: 50,
-    padding: 3, ...Shadows.medium,
+    padding: 3, ...Shadows.medium, overflow: 'hidden',
   },
   avatarFill: {
     flex: 1, borderRadius: 50, justifyContent: 'center', alignItems: 'center',
+  },
+  avatarImage: {
+    width: '100%', height: '100%', borderRadius: 50, resizeMode: 'cover',
   },
   avatarLetter: {
     fontSize: 40, fontWeight: '700', color: '#FFF', fontFamily: 'Poppins_700Bold',
@@ -475,5 +571,47 @@ const styles = StyleSheet.create({
   },
   supportActionText: {
     fontSize: 14, fontFamily: 'Poppins_500Medium',
+  },
+  // Avatar Picker Styles
+  avatarPickerContent: {
+    borderTopLeftRadius: 30, borderTopRightRadius: 30,
+    padding: 24, paddingBottom: 40, maxHeight: '80%',
+    ...Shadows.large,
+  },
+  categoryTabs: {
+    flexDirection: 'row', gap: 10, marginBottom: 20, marginTop: 4,
+  },
+  categoryTab: {
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    paddingVertical: 8, paddingHorizontal: 14, borderRadius: 20,
+    borderWidth: 1, borderColor: 'rgba(0,0,0,0.08)',
+  },
+  categoryTabText: {
+    fontSize: 13, fontFamily: 'Poppins_500Medium',
+  },
+  avatarGridItem: {
+    width: 72, height: 72, borderRadius: 36, overflow: 'hidden',
+    borderWidth: 3, borderColor: 'transparent',
+  },
+  avatarGridItemActive: {
+    borderColor: Colors.primary,
+    shadowColor: Colors.primary, shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.4, shadowRadius: 6, elevation: 6,
+  },
+  avatarGridImage: {
+    width: '100%', height: '100%', borderRadius: 36, resizeMode: 'cover',
+  },
+  avatarCheckBadge: {
+    position: 'absolute', bottom: 0, right: 0,
+    width: 22, height: 22, borderRadius: 11,
+    backgroundColor: Colors.primary, borderWidth: 2, borderColor: '#FFF',
+    justifyContent: 'center', alignItems: 'center',
+  },
+  removeAvatarBtn: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+    gap: 8, paddingVertical: 12, marginTop: 8,
+  },
+  removeAvatarText: {
+    fontSize: 14, fontFamily: 'Poppins_500Medium', color: '#E53E3E',
   },
 });
