@@ -616,9 +616,10 @@ interface ChatBubbleProps {
   text: string;
   isUser: boolean;
   showAvatar?: boolean;
+  userAvatarSource?: any;
 }
 
-export function ChatBubble({ text, isUser, showAvatar }: ChatBubbleProps) {
+export function ChatBubble({ text, isUser, showAvatar, userAvatarSource }: ChatBubbleProps) {
   const { colors, isDark } = useTheme(); // NEW
 
   return (
@@ -642,6 +643,9 @@ export function ChatBubble({ text, isUser, showAvatar }: ChatBubbleProps) {
           isUser ? { color: '#FFF' } : { color: colors.textPrimary }
         ]}>{text}</Text>
       </View>
+      {isUser && userAvatarSource && (
+        <Image source={userAvatarSource} style={{ width: 28, height: 28, borderRadius: 14, marginLeft: 8 }} />
+      )}
     </View>
   );
 }

@@ -10,6 +10,7 @@ import { Colors, Gradients } from '../../constants/theme';
 import { useTheme } from '../../hooks/useTheme';
 import { ChatBubble, TypingIndicator, GlassCard, Mascot } from '../../components/ui';
 import { useStore } from '../../store/useStore';
+import { getAvatarSource } from '../../constants/avatars';
 
 const mascotAvatar = require('../../assets/images/mascot/empatico.png');
 
@@ -19,6 +20,8 @@ export default function ChatScreen() {
   const isTyping = useStore((s) => s.isTyping);
   const sendMessage = useStore((s) => s.sendMessage);
   const currentPlan = useStore((s) => s.currentPlan);
+  const profileAvatar = useStore((s) => s.profileAvatar);
+  const userAvatarSource = getAvatarSource(profileAvatar);
   const [input, setInput] = useState('');
   const scrollRef = useRef<ScrollView>(null);
 
@@ -134,6 +137,7 @@ export default function ChatScreen() {
                 text={msg.text}
                 isUser={msg.sender === 'user'}
                 showAvatar={msg.sender === 'bot' && (i === 0 || messages[i - 1]?.sender !== 'bot')}
+                userAvatarSource={msg.sender === 'user' ? userAvatarSource : undefined}
               />
             </Animated.View>
           ))}

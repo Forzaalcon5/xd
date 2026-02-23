@@ -1,9 +1,11 @@
 import React from 'react';
 import { Tabs } from 'expo-router';
-import { View, StyleSheet, Platform } from 'react-native';
+import { View, StyleSheet, Platform, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../../constants/theme';
 import { useTheme } from '../../hooks/useTheme';
+import { useStore } from '../../store/useStore';
+import { getAvatarSource } from '../../constants/avatars';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -43,6 +45,8 @@ function TabIcon({ name, color, focused, size }: {
 
 export default function TabsLayout() {
   const { colors, isDark } = useTheme(); // NEW
+  const profileAvatar = useStore((s) => s.profileAvatar);
+  const avatarSource = getAvatarSource(profileAvatar);
 
   return (
     <>
@@ -119,7 +123,14 @@ export default function TabsLayout() {
         name="perfil"
         options={{
           tabBarIcon: ({ color, focused }) => (
-            <TabIcon name={focused ? 'person' : 'person-outline'} color={color} focused={focused} size={28} />
+            avatarSource ? (
+              <View style={styles.iconContainer}>
+                <Image source={avatarSource} style={{ width: 28, height: 28, borderRadius: 14, borderWidth: focused ? 2 : 0, borderColor: Colors.primary }} resizeMode="cover" />
+                <Animated.View style={[styles.activeDot, { backgroundColor: color, opacity: focused ? 1 : 0 }]} />
+              </View>
+            ) : (
+              <TabIcon name={focused ? 'person' : 'person-outline'} color={color} focused={focused} size={28} />
+            )
           ),
         }}
       />

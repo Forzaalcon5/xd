@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, Modal } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable, Modal, Image } from 'react-native';
 import Animated, { FadeInUp, FadeIn } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -12,6 +12,7 @@ import {
 import { useTheme } from '../../hooks/useTheme';
 import { useStore, MoodType } from '../../store/useStore';
 import { EMOTIONAL_ROUTES } from '../../constants/clinicalContent';
+import { getAvatarSource } from '../../constants/avatars';
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -23,6 +24,8 @@ export default function HomeScreen() {
   const recentActivities = useStore((s) => s.recentActivities);
   const weeklyMoodData = useStore((s) => s.weeklyMoodData);
   const currentPlan = useStore((s) => s.currentPlan);
+  const profileAvatar = useStore((s) => s.profileAvatar);
+  const avatarSource = getAvatarSource(profileAvatar);
   const activeRoute = EMOTIONAL_ROUTES.find(r => r.id === currentPlan);
   const [showNotifications, setShowNotifications] = useState(false);
   const [showRouteInfo, setShowRouteInfo] = useState(false);
@@ -84,6 +87,11 @@ export default function HomeScreen() {
               <Ionicons name="notifications-outline" size={22} color={colors.textPrimary} />
             </Pressable>
             <AmbientButton />
+            {avatarSource && (
+              <Pressable onPress={() => router.push('/(tabs)/perfil')}>
+                <Image source={avatarSource} style={{ width: 36, height: 36, borderRadius: 18, borderWidth: 2, borderColor: Colors.primary }} resizeMode="cover" />
+              </Pressable>
+            )}
           </View>
         </Animated.View>
 
