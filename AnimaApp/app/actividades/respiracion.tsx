@@ -194,6 +194,10 @@ export default function RespiracionScreen() {
               <Ionicons name="checkmark-circle" size={72} color={Colors.mint} />
             </View>
             <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>¡Excelente Trabajo!</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, backgroundColor: 'rgba(252, 211, 77, 0.15)', paddingVertical: 8, paddingHorizontal: 16, borderRadius: 16, marginBottom: 4 }}>
+              <Ionicons name="sparkles" size={16} color="#FCD34D" />
+              <Text style={{ color: '#FCD34D', fontSize: 16, fontFamily: 'Poppins_700Bold' }}>+25 XP</Text>
+            </View>
             <Text style={[styles.modalText, { color: colors.textSecondary }]}>
               Has completado tus 3 minutos de respiración. Tu mente y cuerpo te lo agradecen profundamente.
             </Text>

@@ -313,7 +313,7 @@ export default function PomodoroScreen() {
           <Mascot size={110} variant={(mode === 'focus' ? 'estudioso' : 'resting') as any} />
           <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
             {mode === 'focus' 
-              ? 'Lumi respira contigo mientras te concentras.\nEl mundo exterior puede esperar un rato.'
+              ? 'Lumi estudia contigo mientras te concentras.\nEl mundo exterior puede esperar un rato.'
               : 'Tómate un respiro. Estírate y bebe agua.\nLumi también está relajándose.'}
           </Text>
         </Animated.View>
@@ -424,6 +424,10 @@ export default function PomodoroScreen() {
           <Animated.Text entering={FadeInUp.delay(200)} style={styles.completionTitle}>
             ¡Ciclo Completado!
           </Animated.Text>
+          <Animated.View entering={FadeInUp.delay(350)} style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: 'rgba(252, 211, 77, 0.2)', paddingVertical: 8, paddingHorizontal: 16, borderRadius: 16 }}>
+            <Ionicons name="sparkles" size={16} color="#FCD34D" />
+            <Text style={{ color: '#FCD34D', fontSize: 16, fontFamily: 'Poppins_700Bold' }}>+25 XP</Text>
+          </Animated.View>
           <Animated.Text entering={FadeInUp.delay(400)} style={styles.completionSub}>
             Respira profundo. Estás un paso más cerca de tu paz.
           </Animated.Text>

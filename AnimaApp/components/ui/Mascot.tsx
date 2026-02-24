@@ -27,9 +27,11 @@ const MASCOT_IMAGES: Record<string, ImageSourcePropType> = {
   registro: require('../../assets/images/mascot/Lumi-resgistro.png'),
   pensativo: require('../../assets/images/mascot/lumi-pensativo.png'),
   estudioso: require('../../assets/images/mascot/lumi-estudioso.png'),
+  celebrando: require('../../assets/images/mascot/lumi-celebrando.png'),
+  levelup: require('../../assets/images/mascot/lumi-up.png'),
 };
 
-export type MascotVariant = 'happy' | 'greeting' | 'empathetic' | 'breathing' | 'meditating' | 'resting' | 'radar' | 'celebrating' | 'diary' | 'fire' | 'star' | 'confused' | 'sleeping' | 'registro' | 'pensativo' | 'estudioso';
+export type MascotVariant = 'happy' | 'greeting' | 'empathetic' | 'breathing' | 'meditating' | 'resting' | 'radar' | 'celebrating' | 'diary' | 'fire' | 'star' | 'confused' | 'sleeping' | 'registro' | 'pensativo' | 'estudioso' | 'celebrando' | 'levelup';
 
 interface MascotProps {
   size?: number;

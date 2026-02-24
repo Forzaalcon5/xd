@@ -305,6 +305,7 @@ export default function GratitudeJournalScreen() {
   const [skySize, setSkySize] = useState({ width: 0, height: 0 });
   const [selectedEntry, setSelectedEntry] = useState<JournalEntry | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
+  const [showXPGain, setShowXPGain] = useState(false);
 
   const handleAddItem = () => {
     if (!inputText.trim()) return;
@@ -318,7 +319,12 @@ export default function GratitudeJournalScreen() {
     SoundService.play('pop');
     addJournalEntry(newItem);
     setInputText('');
-    setShowInput(false);
+    // Show XP gain, then close input
+    setShowXPGain(true);
+    setTimeout(() => {
+      setShowXPGain(false);
+      setShowInput(false);
+    }, 1200);
   };
 
   const handleLongPress = (entry: JournalEntry) => {
@@ -428,7 +434,19 @@ export default function GratitudeJournalScreen() {
                     <Text style={[styles.cancelBtnText, { color: colors.primary }]}>Cancelar</Text>
                   </Pressable>
                   <View style={{ flex: 1 }}>
-                    <JewelButton title="Enviar" icon="sparkles-outline" onPress={handleAddItem} disabled={!inputText.trim()} />
+                    {showXPGain ? (
+                      <Animated.View entering={FadeIn.duration(300)} style={{
+                        flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
+                        backgroundColor: 'rgba(252, 211, 77, 0.15)',
+                        paddingVertical: 14, borderRadius: 16,
+                      }}>
+                        <Ionicons name="sparkles" size={18} color="#FCD34D" />
+                        <Text style={{ color: '#FCD34D', fontSize: 16, fontFamily: 'Poppins_700Bold' }}>+15 XP</Text>
+                        <Text style={{ color: colors.textSecondary, fontSize: 13, fontFamily: 'Poppins_500Medium' }}>¡Estrella creada!</Text>
+                      </Animated.View>
+                    ) : (
+                      <JewelButton title="Enviar" icon="sparkles-outline" onPress={handleAddItem} disabled={!inputText.trim()} />
+                    )}
                   </View>
                 </View>
               </GlassCard>

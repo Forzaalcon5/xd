@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable, Alert, Modal, TextInput, KeyboardAvoidingView, Platform, Image, FlatList } from 'react-native';
 import Animated, { FadeInUp, FadeInDown } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -13,6 +13,7 @@ import * as Haptics from 'expo-haptics';
 import { NotificationService } from '../../utils/NotificationService';
 import { CLINICAL_DISCLAIMER } from '../../constants/clinicalContent';
 import { AVATAR_CATEGORIES, getAvatarSource, AvatarItem } from '../../constants/avatars';
+import { getCurrentLevel, getNextLevel, getLevelProgress, ROUTE_PROGRESSIONS } from '../../constants/progressionSystem';
 
 export default function PerfilScreen() {
   const router = useRouter();
@@ -26,6 +27,12 @@ export default function PerfilScreen() {
 
   const profileAvatar = useStore((s) => s.profileAvatar);
   const setProfileAvatar = useStore((s) => s.setProfileAvatar);
+  const userXP = useStore((s) => s.userXP);
+  const currentPlan = useStore((s) => s.currentPlan);
+  const activeTitle = useStore((s) => s.activeTitle);
+  const unlockedTitles = useStore((s) => s.unlockedTitles);
+  const currentStreak = useStore((s) => s.currentStreak);
+  const setActiveTitle = useStore((s) => s.setActiveTitle);
 
   const [isEditing, setIsEditing] = useState(false);
   const [newName, setNewName] = useState('');
@@ -72,6 +79,26 @@ export default function PerfilScreen() {
   }, [setProfileAvatar]);
 
   const avatarSource = getAvatarSource(profileAvatar);
+
+  // Progression
+  const plan = currentPlan || 'balance';
+  const progression = ROUTE_PROGRESSIONS[plan];
+  const currentLevel = useMemo(() => getCurrentLevel(plan, userXP), [plan, userXP]);
+  const nextLevel = useMemo(() => getNextLevel(plan, userXP), [plan, userXP]);
+  const progressPct = useMemo(() => getLevelProgress(plan, userXP), [plan, userXP]);
+  const routeColor = progression?.color || colors.primary;
+  const isMaxLevel = !nextLevel;
+  
+  // Find active title name from progression data
+  const activeTitleName = useMemo(() => {
+    if (!activeTitle) return null;
+    for (const route of Object.values(ROUTE_PROGRESSIONS)) {
+      for (const lvl of route.levels) {
+        if (lvl.reward?.id === activeTitle) return lvl.reward.name;
+      }
+    }
+    return null;
+  }, [activeTitle]);
 
   const configItems = [
     { icon: 'compass-outline', label: 'Cambiar Mi Ruta', color: '#FCD34D', type: 'link', action: () => router.replace('/(onboarding)/select-plan') },
@@ -124,6 +151,12 @@ export default function PerfilScreen() {
           <View style={{ gap: 4, alignItems: 'center' }}>
             <Text style={[styles.userName, { color: colors.textPrimary }]}>{userName || 'Usuario'}</Text>
             <Text style={[styles.userEmail, { color: colors.textSecondary }]}>{userEmail || 'email@example.com'}</Text>
+            {activeTitleName && (
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 }}>
+                <Ionicons name="ribbon" size={12} color={routeColor} />
+                <Text style={{ fontSize: 11, fontFamily: 'Poppins_600SemiBold', color: routeColor }}>{activeTitleName.replace('Título: ', '')}</Text>
+              </View>
+            )}
           </View>
 
           <Pressable 
@@ -138,6 +171,68 @@ export default function PerfilScreen() {
           >
             <Text style={[styles.editProfileText, { color: colors.textSecondary }]}>Editar Perfil</Text>
           </Pressable>
+        </Animated.View>
+
+        {/* Progression Card */}
+        <Animated.View entering={FadeInUp.duration(500).delay(100)}>
+          <SectionHeader title="Mi Progreso" />
+          <View style={{
+            padding: 16, borderRadius: 20, marginBottom: 16,
+            backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(255,255,255,0.85)',
+            borderWidth: 1, borderColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)',
+          }}>
+            {/* Level + Route info row */}
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 14 }}>
+              <View style={{
+                width: 48, height: 48, borderRadius: 16,
+                backgroundColor: routeColor + '18', borderWidth: 1.5, borderColor: routeColor,
+                justifyContent: 'center', alignItems: 'center',
+              }}>
+                <Ionicons name={currentLevel.icon as any} size={22} color={routeColor} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 15, fontFamily: 'Poppins_700Bold', color: colors.textPrimary }}>
+                  Lv.{currentLevel.level} — {currentLevel.title}
+                </Text>
+                <Text style={{ fontSize: 12, fontFamily: 'Poppins_400Regular', color: colors.textLight }}>
+                  Ruta {progression?.routeName} {progression?.emoji}
+                </Text>
+              </View>
+              {currentStreak > 0 && (
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#F97316' + '15', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 12 }}>
+                  <Ionicons name="flame" size={14} color="#F97316" />
+                  <Text style={{ fontSize: 13, fontFamily: 'Poppins_700Bold', color: '#F97316' }}>{currentStreak}</Text>
+                </View>
+              )}
+            </View>
+
+            {/* XP Bar */}
+            <View style={{ marginBottom: activeTitleName ? 10 : 0 }}>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 }}>
+                <Text style={{ fontSize: 12, fontFamily: 'Poppins_500Medium', color: colors.textLight }}>
+                  {isMaxLevel ? '¡Nivel Máximo!' : `${userXP} / ${nextLevel?.xpRequired} XP`}
+                </Text>
+                <Text style={{ fontSize: 12, fontFamily: 'Poppins_700Bold', color: routeColor }}>
+                  {Math.round(progressPct * 100)}%
+                </Text>
+              </View>
+              <View style={{ height: 10, borderRadius: 5, backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)', overflow: 'hidden' }}>
+                <LinearGradient
+                  colors={progression?.gradient || [routeColor, routeColor]}
+                  start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
+                  style={{ height: '100%', borderRadius: 5, width: `${Math.max(progressPct * 100, 2)}%` }}
+                />
+              </View>
+            </View>
+
+            {/* Active Title */}
+            {activeTitleName && (
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                <Ionicons name="ribbon" size={14} color={routeColor} />
+                <Text style={{ fontSize: 12, fontFamily: 'Poppins_600SemiBold', color: routeColor }}>{activeTitleName.replace('Título: ', '')}</Text>
+              </View>
+            )}
+          </View>
         </Animated.View>
 
         {/* Settings / System Section */}

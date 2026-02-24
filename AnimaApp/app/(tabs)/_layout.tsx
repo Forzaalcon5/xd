@@ -12,6 +12,7 @@ import Animated, {
   withSpring,
 } from 'react-native-reanimated';
 import { AdaptiveSOSButton } from '../../components/AdaptiveSOS';
+import LevelUpModal from '../../components/ui/LevelUpModal';
 
 function TabIcon({ name, color, focused, size }: {
   name: string; color: string; focused: boolean; size: number;
@@ -49,7 +50,7 @@ export default function TabsLayout() {
   const avatarSource = getAvatarSource(profileAvatar);
 
   return (
-    <>
+    <View style={{ flex: 1 }}>
       <Tabs
         screenOptions={{
           sceneStyle: { backgroundColor: 'transparent' },
@@ -136,7 +137,8 @@ export default function TabsLayout() {
       />
     </Tabs>
     <AdaptiveSOSButton />
-    </>
+    <LevelUpModal />
+    </View>
   );
 }
 

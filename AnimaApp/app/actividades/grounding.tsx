@@ -63,6 +63,10 @@ export default function GroundingScreen() {
             <Animated.View entering={FadeIn.duration(1500).delay(500)}>
               <Ionicons name="flower" size={100} color="#38BDF8" style={{ textShadowColor: 'rgba(56, 189, 248, 0.5)', textShadowRadius: 20 }} />
             </Animated.View>
+            <Animated.View entering={FadeIn.duration(600).delay(1200)} style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: 'rgba(252, 211, 77, 0.2)', paddingVertical: 8, paddingHorizontal: 16, borderRadius: 16, marginTop: 16 }}>
+              <Ionicons name="sparkles" size={16} color="#FCD34D" />
+              <Text style={{ color: '#FCD34D', fontSize: 16, fontFamily: 'Poppins_700Bold' }}>+25 XP</Text>
+            </Animated.View>
           </View>
         );
       default:

@@ -27,6 +27,8 @@ import { useTheme } from '../../hooks/useTheme';
 import { useStore, MoodType } from '../../store/useStore';
 import { EMOTIONAL_ROUTES } from '../../constants/clinicalContent';
 import { SoundService } from '../../utils/SoundService';
+import { useRouter } from 'expo-router';
+import { getCurrentLevel, getNextLevel, getLevelProgress, ROUTE_PROGRESSIONS, getAllRewards } from '../../constants/progressionSystem';
 
 // ============================================================
 // HELPERS
@@ -192,6 +194,7 @@ const chartStyles = StyleSheet.create({
 // ============================================================
 export default function RegistroScreen() {
   const { colors, isDark } = useTheme();
+  const router = useRouter();
   const moodHistory = useStore(s => s.moodHistory);
   const journalEntries = useStore(s => s.journalEntries) ?? [];
   const recentActivities = useStore(s => s.recentActivities);
@@ -206,6 +209,8 @@ export default function RegistroScreen() {
   const isEmpty = moodHistory.length === 0 && journalEntries.length === 0;
 
   const [showLogModal, setShowLogModal] = useState(false);
+  const [savedXP, setSavedXP] = useState(false);
+  const [registroTab, setRegistroTab] = useState<'registro' | 'progreso'>('registro');
   const [selectedMood, setSelectedMood] = useState<MoodType | null>(null);
   const [journalNote, setJournalNote] = useState('');
 
@@ -224,11 +229,28 @@ export default function RegistroScreen() {
       SoundService.play('click');
       setMood(selectedMood);
       saveMoodEntry(journalNote.trim() || undefined);
-      setShowLogModal(false);
       setJournalNote('');
       setSelectedMood(null);
+      // Show XP gain INSIDE the modal, then close after delay
+      setSavedXP(true);
+      setTimeout(() => {
+        setSavedXP(false);
+        setShowLogModal(false);
+      }, 1200);
     }
   }, [selectedMood, journalNote]);
+
+  // Progression
+  const userXP = useStore(s => s.userXP);
+  const currentLevel = useMemo(() => getCurrentLevel(currentPlan || 'balance', userXP), [currentPlan, userXP]);
+  const nextLevel = useMemo(() => getNextLevel(currentPlan || 'balance', userXP), [currentPlan, userXP]);
+  const progressPct = useMemo(() => getLevelProgress(currentPlan || 'balance', userXP), [currentPlan, userXP]);
+  const progression = ROUTE_PROGRESSIONS[currentPlan || 'balance'];
+  const routeColor = progression?.color || colors.primary;
+  const allRewards = useMemo(() => {
+    const items = getAllRewards(currentPlan || 'balance', userXP);
+    return items.map(r => ({ ...r, unlocked: userXP >= r.xpRequired }));
+  }, [currentPlan, userXP]);
 
   return (
     <View style={styles.container}>
@@ -255,6 +277,30 @@ export default function RegistroScreen() {
           <Mascot size={90} variant={'registro' as any} style={{ marginRight: -8 }} />
         </Animated.View>
 
+        {/* ─── TAB SWITCHER ─── */}
+        <Animated.View entering={FadeInUp.duration(400).delay(100)} style={styles.tabSwitcher}>
+          <Pressable
+            style={[styles.tabBtn, registroTab === 'registro' && { backgroundColor: colors.primary + '20' }]}
+            onPress={() => { Haptics.selectionAsync(); setRegistroTab('registro'); }}
+          >
+            <Ionicons name="time-outline" size={16} color={registroTab === 'registro' ? colors.primary : colors.textLight} />
+            <Text style={[styles.tabBtnText, { color: registroTab === 'registro' ? colors.primary : colors.textLight }]}>Registro</Text>
+          </Pressable>
+          <Pressable
+            style={[styles.tabBtn, registroTab === 'progreso' && { backgroundColor: routeColor + '20' }]}
+            onPress={() => { Haptics.selectionAsync(); setRegistroTab('progreso'); }}
+          >
+            <Ionicons name="trophy-outline" size={16} color={registroTab === 'progreso' ? routeColor : colors.textLight} />
+            <Text style={[styles.tabBtnText, { color: registroTab === 'progreso' ? routeColor : colors.textLight }]}>Progreso</Text>
+            <View style={[styles.tabLvlBadge, { backgroundColor: routeColor + '20' }]}>
+              <Text style={[styles.tabLvlText, { color: routeColor }]}>Lv.{currentLevel.level}</Text>
+            </View>
+          </Pressable>
+        </Animated.View>
+
+        {/* ─── TAB CONTENT ─── */}
+        {registroTab === 'registro' ? (
+        <View>
         {/* ─── 2. INSIGHT EMOCIONAL ─── */}
         <Animated.View entering={FadeInUp.duration(500).delay(100)}>
           <GlassCard style={{ ...styles.insightCard, borderLeftColor: insight.color, borderLeftWidth: 3 }}>
@@ -434,6 +480,155 @@ export default function RegistroScreen() {
         )}
 
         <View style={{ height: 120 }} />
+        </View>
+        ) : (
+        /* ─── PROGRESO TAB ─── */
+        <View>
+          {/* Hero Level Card */}
+          <Animated.View entering={FadeIn.duration(500)}>
+            <GlassCard style={styles.heroLevelCard}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
+                <View style={[styles.levelBadgeLg, { backgroundColor: routeColor + '20', borderColor: routeColor }]}>
+                  <Text style={[styles.levelBadgeNum, { color: routeColor }]}>Lv.{currentLevel.level}</Text>
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.heroLevelRoute, { color: colors.textLight }]}>Ruta {progression?.routeName} {progression?.emoji}</Text>
+                  <Text style={[styles.heroLevelTitle, { color: colors.textPrimary }]}>{currentLevel.title}</Text>
+                </View>
+                <Mascot size={70} variant={'celebrando' as any} />
+              </View>
+              {/* XP Bar */}
+              <View style={{ marginTop: 16 }}>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 }}>
+                  <Text style={[styles.xpLabelTxt, { color: colors.textLight }]}>
+                    {!nextLevel ? '¡Nivel Máximo!' : `${userXP} / ${nextLevel.xpRequired} XP`}
+                  </Text>
+                  <Text style={[styles.xpPctTxt, { color: routeColor }]}>{Math.round(progressPct * 100)}%</Text>
+                </View>
+                <View style={[styles.xpBarTrack, { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)' }]}>
+                  <View style={[styles.xpBarFill, { width: `${Math.max(progressPct * 100, 2)}%`, backgroundColor: routeColor }]} />
+                </View>
+                {nextLevel && (
+                  <Text style={[styles.xpRemainingTxt, { color: colors.textLight }]}>
+                    {nextLevel.xpRequired - userXP} XP para "{nextLevel.title}"
+                  </Text>
+                )}
+              </View>
+              {/* Lumi Message */}
+              <View style={[styles.lumiMsgBox, { backgroundColor: routeColor + '08' }]}>
+                <Ionicons name="chatbubble-ellipses" size={14} color={routeColor} />
+                <Text style={[styles.lumiMsgTxt, { color: colors.textSecondary }]}>{currentLevel.lumiMessage}</Text>
+              </View>
+            </GlassCard>
+          </Animated.View>
+
+          {/* XP Sources */}
+          <Animated.View entering={FadeInUp.duration(400).delay(200)}>
+            <SectionHeader title="¿Cómo gano XP?" />
+            <View style={{ gap: 8, marginBottom: 20 }}>
+              {[
+                { icon: 'heart', label: 'Registrar ánimo', xp: '+10', color: '#F472B6' },
+                { icon: 'sparkles', label: 'Completar actividad', xp: '+25', color: '#4ADE80' },
+                { icon: 'star', label: 'Diario Estelar', xp: '+15', color: '#FCD34D' },
+                { icon: 'flame', label: 'Racha 3+ días', xp: '+50', color: '#F97316' },
+              ].map((s, i) => (
+                <Animated.View key={i} entering={FadeInRight.duration(300).delay(300 + i * 80)}>
+                  <View style={[styles.xpSourceRow, { backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)' }]}>
+                    <View style={[styles.xpSourceIco, { backgroundColor: s.color + '15' }]}>
+                      <Ionicons name={s.icon as any} size={16} color={s.color} />
+                    </View>
+                    <Text style={[styles.xpSourceLbl, { color: colors.textPrimary }]}>{s.label}</Text>
+                    <Text style={[styles.xpSourceVal, { color: s.color }]}>{s.xp}</Text>
+                  </View>
+                </Animated.View>
+              ))}
+            </View>
+          </Animated.View>
+
+          {/* Rewards */}
+          <Animated.View entering={FadeInUp.duration(400).delay(400)}>
+            <SectionHeader title="Recompensas" />
+            <View style={{ gap: 10, marginBottom: 20 }}>
+              {allRewards.map((r, i) => (
+                <Animated.View key={r.reward.id} entering={FadeInUp.duration(300).delay(500 + i * 80)}>
+                  <GlassCard style={{ ...styles.rewardRow, ...(r.unlocked ? {} : { opacity: 0.5 }) }}>
+                    <View style={[styles.rewardIco, { backgroundColor: r.unlocked ? routeColor + '20' : (isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)') }]}>
+                      {r.unlocked
+                        ? <Ionicons name={r.reward.icon as any} size={22} color={routeColor} />
+                        : <Ionicons name="lock-closed" size={18} color={colors.textLight} />
+                      }
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={[styles.rewardNm, { color: r.unlocked ? colors.textPrimary : colors.textLight }]}>{r.reward.name}</Text>
+                      <Text style={[styles.rewardDsc, { color: colors.textLight }]}>
+                        {r.unlocked ? r.reward.description : `Nivel ${r.level} • ${r.xpRequired} XP`}
+                      </Text>
+                    </View>
+                    {r.unlocked && <Ionicons name="checkmark-circle" size={20} color={routeColor} />}
+                  </GlassCard>
+                </Animated.View>
+              ))}
+            </View>
+          </Animated.View>
+
+          {/* Journey Timeline */}
+          <Animated.View entering={FadeInUp.duration(400).delay(600)}>
+            <SectionHeader title="Tu Camino" />
+            <View style={{ marginBottom: 16 }}>
+              {progression?.levels.map((lvl, i) => {
+                const isReached = userXP >= lvl.xpRequired;
+                const isCurrent = lvl.level === currentLevel.level;
+                return (
+                  <View key={lvl.level} style={styles.jItem}>
+                    <View style={styles.jSpine}>
+                      <View style={[
+                        styles.jDot,
+                        {
+                          backgroundColor: isReached ? routeColor : (isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.06)'),
+                          borderColor: isCurrent ? routeColor : 'transparent',
+                          borderWidth: isCurrent ? 3 : 0,
+                          transform: [{ scale: isCurrent ? 1.3 : 1 }],
+                        },
+                      ]}>
+                        {isReached && <Ionicons name="checkmark" size={10} color="#FFF" />}
+                      </View>
+                      {i < (progression?.levels.length || 0) - 1 && (
+                        <View style={[
+                          styles.jLine,
+                          { backgroundColor: isReached ? routeColor + '40' : (isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)') },
+                        ]} />
+                      )}
+                    </View>
+                    <View style={styles.jContent}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                        <Text style={[styles.jTitle, { color: isReached ? colors.textPrimary : colors.textLight }]}>
+                          Lv.{lvl.level} — {lvl.title}
+                        </Text>
+                        {isCurrent && (
+                          <View style={[styles.jCurrentBadge, { backgroundColor: routeColor }]}>
+                            <Text style={styles.jCurrentText}>TÚ</Text>
+                          </View>
+                        )}
+                      </View>
+                      <Text style={[styles.jXP, { color: colors.textLight }]}>
+                        {lvl.xpRequired === 0 ? 'Inicio' : `${lvl.xpRequired} XP`}
+                      </Text>
+                      {lvl.reward && (
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 1 }}>
+                          <Ionicons name={(isReached ? 'gift' : 'gift-outline') as any} size={11} color={isReached ? routeColor : colors.textLight} />
+                          <Text style={[styles.jReward, { color: isReached ? routeColor : colors.textLight }]}>{lvl.reward.name}</Text>
+                        </View>
+                      )}
+                    </View>
+                  </View>
+                );
+              })}
+            </View>
+          </Animated.View>
+
+          <View style={{ height: 120 }} />
+        </View>
+        )}
       </ScrollView>
 
       {/* ─── FAB ─── */}
@@ -451,6 +646,8 @@ export default function RegistroScreen() {
           </LinearGradient>
         </Pressable>
       </Animated.View>
+
+
 
       {/* ─── LOG MODAL ─── */}
       <Modal visible={showLogModal} transparent animationType="slide" onRequestClose={() => setShowLogModal(false)}>
@@ -515,13 +712,26 @@ export default function RegistroScreen() {
               onChangeText={setJournalNote}
             />
 
-            <JewelButton
-              title="Guardar Registro"
-              icon="checkmark-circle-outline"
-              onPress={handleSaveLog}
-              style={{ marginTop: 20, opacity: selectedMood ? 1 : 0.5 }}
-              disabled={!selectedMood}
-            />
+            {/* Save Button or XP Confirmation */}
+            {savedXP ? (
+              <Animated.View entering={FadeIn.duration(300)} style={{
+                flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
+                backgroundColor: 'rgba(252, 211, 77, 0.15)',
+                paddingVertical: 16, borderRadius: 20, marginTop: 20,
+              }}>
+                <Ionicons name="sparkles" size={20} color="#FCD34D" />
+                <Text style={{ color: '#FCD34D', fontSize: 18, fontFamily: 'Poppins_700Bold' }}>+10 XP</Text>
+                <Text style={{ color: colors.textSecondary, fontSize: 14, fontFamily: 'Poppins_500Medium', marginLeft: 4 }}>¡Registrado!</Text>
+              </Animated.View>
+            ) : (
+              <JewelButton
+                title="Guardar Registro"
+                icon="checkmark-circle-outline"
+                onPress={handleSaveLog}
+                style={{ marginTop: 20, opacity: selectedMood ? 1 : 0.5 }}
+                disabled={!selectedMood}
+              />
+            )}
           </View>
         </KeyboardAvoidingView>
       </Modal>
@@ -622,4 +832,52 @@ const styles = StyleSheet.create({
   moodLabel: { fontSize: 12, fontFamily: 'Poppins_500Medium' },
   inputLabel: { fontSize: 14, fontFamily: 'Poppins_500Medium', marginBottom: 8 },
   input: { borderRadius: 16, padding: 16, fontSize: 14, borderWidth: 1, minHeight: 90, fontFamily: 'Poppins_400Regular' },
-});
+  // Progress card
+  progressCard: { padding: 14, marginTop: 8, marginBottom: 8 },
+  progressBadge: {
+    width: 44, height: 44, borderRadius: 14, borderWidth: 2,
+    justifyContent: 'center', alignItems: 'center',
+  },
+  progressLvl: { fontSize: 13, fontFamily: 'Poppins_700Bold' },
+  progressTitle: { fontSize: 15, fontFamily: 'Poppins_600SemiBold', marginBottom: 4 },
+  progressBar: { height: 6, borderRadius: 3, overflow: 'hidden' },
+  progressFill: { height: '100%', borderRadius: 3 },
+  progressXP: { fontSize: 13, fontFamily: 'Poppins_700Bold', marginBottom: 2 },
+  // Tab switcher
+  tabSwitcher: { flexDirection: 'row', gap: 8, marginBottom: 16, marginTop: 4 },
+  tabBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 10, borderRadius: 14 },
+  tabBtnText: { fontSize: 14, fontFamily: 'Poppins_600SemiBold' },
+  tabLvlBadge: { paddingHorizontal: 6, paddingVertical: 2, borderRadius: 8 },
+  tabLvlText: { fontSize: 10, fontFamily: 'Poppins_700Bold' },
+  // Progreso tab
+  heroLevelCard: { padding: 20, marginBottom: 20 },
+  levelBadgeLg: { width: 56, height: 56, borderRadius: 18, borderWidth: 2, justifyContent: 'center', alignItems: 'center' },
+  levelBadgeNum: { fontSize: 16, fontFamily: 'Poppins_700Bold' },
+  heroLevelRoute: { fontSize: 11, fontFamily: 'Poppins_500Medium', textTransform: 'uppercase', letterSpacing: 0.5 },
+  heroLevelTitle: { fontSize: 22, fontFamily: 'Poppins_700Bold', marginTop: 2 },
+  xpLabelTxt: { fontSize: 12, fontFamily: 'Poppins_500Medium' },
+  xpPctTxt: { fontSize: 12, fontFamily: 'Poppins_700Bold' },
+  xpBarTrack: { height: 10, borderRadius: 5, overflow: 'hidden' },
+  xpBarFill: { height: '100%', borderRadius: 5 },
+  xpRemainingTxt: { fontSize: 11, fontFamily: 'Poppins_400Regular', marginTop: 6 },
+  lumiMsgBox: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, padding: 12, borderRadius: 12, marginTop: 14 },
+  lumiMsgTxt: { flex: 1, fontSize: 13, fontFamily: 'Poppins_400Regular', fontStyle: 'italic', lineHeight: 20 },
+  xpSourceRow: { flexDirection: 'row', alignItems: 'center', padding: 12, borderRadius: 14, gap: 10 },
+  xpSourceIco: { width: 34, height: 34, borderRadius: 11, justifyContent: 'center', alignItems: 'center' },
+  xpSourceLbl: { flex: 1, fontSize: 14, fontFamily: 'Poppins_500Medium' },
+  xpSourceVal: { fontSize: 14, fontFamily: 'Poppins_700Bold' },
+  rewardRow: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14 },
+  rewardIco: { width: 48, height: 48, borderRadius: 16, justifyContent: 'center', alignItems: 'center' },
+  rewardNm: { fontSize: 14, fontFamily: 'Poppins_600SemiBold' },
+  rewardDsc: { fontSize: 12, fontFamily: 'Poppins_400Regular', marginTop: 2 },
+  jItem: { flexDirection: 'row', minHeight: 64 },
+  jSpine: { width: 36, alignItems: 'center' },
+  jDot: { width: 24, height: 24, borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
+  jLine: { width: 2.5, flex: 1, marginVertical: 3 },
+  jContent: { flex: 1, paddingLeft: 12, paddingBottom: 14 },
+  jTitle: { fontSize: 14, fontFamily: 'Poppins_600SemiBold' },
+  jXP: { fontSize: 11, fontFamily: 'Poppins_400Regular', marginTop: 2 },
+  jReward: { fontSize: 11, fontFamily: 'Poppins_500Medium' },
+  jCurrentBadge: { paddingHorizontal: 5, paddingVertical: 1, borderRadius: 5 },
+  jCurrentText: { fontSize: 8, fontFamily: 'Poppins_700Bold', color: '#FFF', letterSpacing: 0.5 },
+  });

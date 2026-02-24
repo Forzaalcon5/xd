@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useCallback } from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable, Modal, Image } from 'react-native';
 import Animated, { FadeInUp, FadeIn } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -28,6 +28,13 @@ export default function HomeScreen() {
   const avatarSource = getAvatarSource(profileAvatar);
   const activeRoute = EMOTIONAL_ROUTES.find(r => r.id === currentPlan);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [showXPGain, setShowXPGain] = useState(false);
+
+  const handleRegisterMood = useCallback(() => {
+    saveMoodEntry();
+    setShowXPGain(true);
+    setTimeout(() => setShowXPGain(false), 1500);
+  }, [saveMoodEntry]);
   const [showRouteInfo, setShowRouteInfo] = useState(false);
 
   const notificationsMock = [
@@ -158,12 +165,24 @@ export default function HomeScreen() {
                 <MoodButton key={m} mood={m} selected={currentMood === m} onPress={() => setMood(m)} />
               ))}
             </View>
-            <JewelButton
-              title="Registrar estado de ánimo"
-              onPress={saveMoodEntry}
-              disabled={!currentMood}
-              style={{ marginTop: 16 }}
-            />
+            {showXPGain ? (
+              <Animated.View entering={FadeIn.duration(300)} style={{
+                flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
+                backgroundColor: 'rgba(252, 211, 77, 0.15)',
+                paddingVertical: 14, borderRadius: 20, marginTop: 16,
+              }}>
+                <Ionicons name="sparkles" size={20} color="#FCD34D" />
+                <Text style={{ color: '#FCD34D', fontSize: 18, fontFamily: 'Poppins_700Bold' }}>+10 XP</Text>
+                <Text style={{ color: colors.textSecondary, fontSize: 14, fontFamily: 'Poppins_500Medium' }}>¡Registrado!</Text>
+              </Animated.View>
+            ) : (
+              <JewelButton
+                title="Registrar estado de ánimo"
+                onPress={handleRegisterMood}
+                disabled={!currentMood}
+                style={{ marginTop: 16 }}
+              />
+            )}
           </GlassCard>
         </Animated.View>
 

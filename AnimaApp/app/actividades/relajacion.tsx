@@ -172,6 +172,10 @@ export default function RelajacionScreen() {
           <Animated.View entering={FadeIn.duration(500)} style={styles.outroSection}>
             <Ionicons name="checkmark-circle" size={80} color="#4ADE80" />
             <Text style={[styles.title, { color: colors.textPrimary }]}>¡Cuerpo Relajado!</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: 'rgba(252, 211, 77, 0.15)', paddingVertical: 8, paddingHorizontal: 16, borderRadius: 16, marginBottom: 8 }}>
+              <Ionicons name="sparkles" size={16} color="#FCD34D" />
+              <Text style={{ color: '#FCD34D', fontSize: 16, fontFamily: 'Poppins_700Bold' }}>+25 XP</Text>
+            </View>
             <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
               Has completado el escaneo. Intenta llevar esta sensación de calma al resto de tu día.
             </Text>

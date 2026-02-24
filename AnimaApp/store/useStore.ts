@@ -15,6 +15,7 @@ import { NotificationService } from '../utils/NotificationService';
 import { getBotResponse } from '../services/ChatEngine';
 import { MoodType } from '../constants/theme';
 import { DEFAULT_ACTIVITIES } from '../constants/activities';
+import { XP_EVENTS, getCurrentLevel, RouteLevel } from '../constants/progressionSystem';
 
 // Re-export MoodType desde la fuente única para compatibilidad con imports existentes
 export { MoodType } from '../constants/theme';
@@ -85,6 +86,14 @@ interface AppState {
   activities: Activity[];
   recentActivities: { title: string; time: string; detail: string; icon?: string; color?: string }[];
   
+  // Progression
+  userXP: number;
+  lastActiveDate: string | null;
+  currentStreak: number;
+  pendingLevelUp: RouteLevel | null;
+  activeTitle: string | null;
+  unlockedTitles: string[];
+  
   // Actions
   login: (email: string, name: string) => void;
   updateUser: (name: string) => void;
@@ -102,6 +111,9 @@ interface AppState {
   removeJournalEntry: (id: string) => void;
   updateJournalEntry: (id: string, text: string) => void;
   addCompletedActivity: (title: string, type: string) => void;
+  addXP: (amount: number) => void;
+  clearLevelUp: () => void;
+  setActiveTitle: (titleId: string | null) => void;
 }
 
 export const useStore = create<AppState>()(
@@ -139,13 +151,28 @@ export const useStore = create<AppState>()(
       activities: DEFAULT_ACTIVITIES,
       recentActivities: [],
       
+      // Progression
+      userXP: 0,
+      lastActiveDate: null,
+      currentStreak: 0,
+      pendingLevelUp: null,
+      activeTitle: null,
+      unlockedTitles: [],
+      
       // Actions
       login: (email, name) => set({ isAuthenticated: true, userEmail: email, userName: name || 'Usuario' }),
       updateUser: (name) => set({ userName: name }),
       setProfileAvatar: (avatarId) => set({ profileAvatar: avatarId }),
       logout: () => {
         SoundService.stopAmbient();
-        set({ isAuthenticated: false, userName: '', userEmail: '', profileAvatar: null, messages: [], currentPlan: null });
+        set({ 
+          isAuthenticated: false, userName: '', userEmail: '', profileAvatar: null, 
+          messages: [], currentPlan: null, recommendedPlan: null,
+          currentMood: null, moodHistory: [], weeklyMoodData: [0, 0, 0, 0, 0, 0, 0],
+          journalEntries: [], recentActivities: [],
+          userXP: 0, lastActiveDate: null, currentStreak: 0,
+          pendingLevelUp: null, activeTitle: null, unlockedTitles: [],
+        });
       },
       hideSplash: () => set({ showSplash: false }),
       toggleNotifications: (enabled: boolean) => {
@@ -178,11 +205,56 @@ export const useStore = create<AppState>()(
         const score = scores[currentMood];
         const newWeekly = [...get().weeklyMoodData.slice(1), score];
 
+        const oldXP = get().userXP;
+        const newXP = oldXP + XP_EVENTS.mood.amount;
+        const today = new Date().toISOString().split('T')[0];
+        
+        // Streak calculation
+        const { lastActiveDate, currentStreak } = get();
+        let newStreak = currentStreak;
+        let bonusXP = 0;
+        if (lastActiveDate) {
+          const lastDate = new Date(lastActiveDate);
+          const todayDate = new Date(today);
+          const diffDays = Math.floor((todayDate.getTime() - lastDate.getTime()) / (1000 * 60 * 60 * 24));
+          if (diffDays === 1) {
+            newStreak = currentStreak + 1;
+            if (newStreak === 3) bonusXP = XP_EVENTS.streak.amount; // +50 at 3-day streak
+          } else if (diffDays >= 3) {
+            bonusXP = XP_EVENTS.comeback.amount; // +30 comeback
+            newStreak = 1;
+          } else if (diffDays === 0) {
+            // Same day, no streak change
+          } else {
+            newStreak = 1; // Reset streak (missed 1 day)
+          }
+        } else {
+          newStreak = 1;
+        }
+
         set({ 
           moodHistory: [newEntry, ...moodHistory], 
           currentMood: null,
           weeklyMoodData: newWeekly,
+          userXP: newXP + bonusXP,
+          lastActiveDate: today,
+          currentStreak: newStreak,
         });
+
+        // Check level up
+        const plan = get().currentPlan || 'balance';
+        const oldLevel = getCurrentLevel(plan, oldXP);
+        const newLevel = getCurrentLevel(plan, newXP + bonusXP);
+        if (newLevel.level > oldLevel.level) {
+          set({ pendingLevelUp: newLevel });
+          // Auto-unlock title rewards
+          if (newLevel.reward?.type === 'title') {
+            const titles = get().unlockedTitles;
+            if (!titles.includes(newLevel.reward.id)) {
+              set({ unlockedTitles: [...titles, newLevel.reward.id] });
+            }
+          }
+        }
       },
       removeMoodEntry: (id: string) => {
         const { moodHistory } = get();
@@ -223,9 +295,26 @@ export const useStore = create<AppState>()(
         }, 1500 + Math.random() * 1000);
       },
       addJournalEntry: (entry) => {
+        const oldXP = get().userXP;
+        const newXP = oldXP + XP_EVENTS.journal.amount;
         set((state) => ({
           journalEntries: [...state.journalEntries, entry],
+          userXP: newXP,
+          lastActiveDate: new Date().toISOString().split('T')[0],
         }));
+        // Check level up
+        const plan = get().currentPlan || 'balance';
+        const oldLevel = getCurrentLevel(plan, oldXP);
+        const newLevel = getCurrentLevel(plan, newXP);
+        if (newLevel.level > oldLevel.level) {
+          set({ pendingLevelUp: newLevel });
+          if (newLevel.reward?.type === 'title') {
+            const titles = get().unlockedTitles;
+            if (!titles.includes(newLevel.reward.id)) {
+              set({ unlockedTitles: [...titles, newLevel.reward.id] });
+            }
+          }
+        }
       },
       removeJournalEntry: (id) => {
         set((state) => ({
@@ -246,9 +335,44 @@ export const useStore = create<AppState>()(
         if (type === 'respiracion') { icon = 'water-outline'; color = '#87CEEB'; }
         if (type === 'meditacion') { icon = 'sparkles-outline'; color = '#A8E6CF'; }
         
+        const oldXP = get().userXP;
+        const newXP = oldXP + XP_EVENTS.activity.amount;
         const newActivity = { title, time: 'Recién', detail: 'Completado', icon, color };
-        set({ recentActivities: [newActivity, ...recentActivities].slice(0, 5) });
+        set({ 
+          recentActivities: [newActivity, ...recentActivities].slice(0, 5),
+          userXP: newXP,
+          lastActiveDate: new Date().toISOString().split('T')[0],
+        });
+        // Check level up
+        const plan = get().currentPlan || 'balance';
+        const oldLevel = getCurrentLevel(plan, oldXP);
+        const newLevel = getCurrentLevel(plan, newXP);
+        if (newLevel.level > oldLevel.level) {
+          set({ pendingLevelUp: newLevel });
+          if (newLevel.reward?.type === 'title') {
+            const titles = get().unlockedTitles;
+            if (!titles.includes(newLevel.reward.id)) {
+              set({ unlockedTitles: [...titles, newLevel.reward.id] });
+            }
+          }
+        }
       },
+      addXP: (amount: number) => {
+        const oldXP = get().userXP;
+        const newXP = oldXP + amount;
+        set({ 
+          userXP: newXP,
+          lastActiveDate: new Date().toISOString().split('T')[0],
+        });
+        const plan = get().currentPlan || 'balance';
+        const oldLevel = getCurrentLevel(plan, oldXP);
+        const newLevel = getCurrentLevel(plan, newXP);
+        if (newLevel.level > oldLevel.level) {
+          set({ pendingLevelUp: newLevel });
+        }
+      },
+      clearLevelUp: () => set({ pendingLevelUp: null }),
+      setActiveTitle: (titleId) => set({ activeTitle: titleId }),
     }),
     {
       name: 'anima-app-storage',
@@ -266,6 +390,11 @@ export const useStore = create<AppState>()(
         messages: state.messages,
         journalEntries: state.journalEntries,
         recentActivities: state.recentActivities,
+        userXP: state.userXP,
+        lastActiveDate: state.lastActiveDate,
+        currentStreak: state.currentStreak,
+        activeTitle: state.activeTitle,
+        unlockedTitles: state.unlockedTitles,
       }),
     }
   )
