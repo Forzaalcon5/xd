@@ -66,6 +66,9 @@ interface AppState {
   mockLateNight: boolean;
   setMockLateNight: (val: boolean) => void;
   
+  // UI State
+  _scrollToMood?: boolean;
+  
   // Plan (Emotional Route)
   currentPlan: string | null;
   recommendedPlan: string | null;
@@ -122,6 +125,9 @@ export const useStore = create<AppState>()(
       // Debug
       mockLateNight: false,
       setMockLateNight: (val: boolean) => set({ mockLateNight: val }),
+      
+      // UI State
+      _scrollToMood: false,
 
       // Auth
       isAuthenticated: false,

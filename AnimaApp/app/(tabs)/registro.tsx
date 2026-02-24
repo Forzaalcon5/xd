@@ -13,7 +13,7 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, Pressable,
-  Modal, TextInput, KeyboardAvoidingView, Platform, Alert,
+  Modal, TextInput, KeyboardAvoidingView, Platform, Alert, Image,
 } from 'react-native';
 import Animated, { FadeInUp, FadeIn, FadeInRight } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -453,29 +453,39 @@ export default function RegistroScreen() {
           </View>
         ) : (
           <Animated.View entering={FadeIn.duration(600).delay(400)}>
-            <GlassCard style={styles.emptyCard}>
-              <Mascot size={110} variant={'registro' as any} />
-              <Text style={[styles.emptyTitle, { color: colors.textPrimary }]}>Tu historia empieza aquí</Text>
-              <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
-                Cada registro es un paso hacia conocerte mejor. Lumi te acompañará en el camino.
-              </Text>
-              <View style={styles.emptySteps}>
-                {[
-                  { icon: 'add-circle-outline', text: 'Toca el botón + para registrar tu ánimo', color: Colors.primary },
-                  { icon: 'bar-chart-outline', text: 'Descubre patrones en tu bienestar', color: '#FBBF24' },
-                  { icon: 'analytics-outline', text: 'Recibe insights personalizados', color: '#4ADE80' },
-                ].map((step, i) => (
-                  <Animated.View key={i} entering={FadeInRight.duration(400).delay(600 + i * 120)}>
-                    <View style={[styles.emptyStep, { backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : step.color + '08' }]}>
-                      <View style={[styles.emptyStepIcon, { backgroundColor: step.color + '15' }]}>
-                        <Ionicons name={step.icon as any} size={18} color={step.color} />
+            <Pressable onPress={() => {
+              // Navega a home y setea flag para scrollear
+              useStore.setState({ _scrollToMood: true });
+              router.push('/');
+            }}>
+              <GlassCard style={styles.emptyCard}>
+                <Image
+                  source={require('../../assets/images/mascot/lumi-camino.png')}
+                  style={styles.emptyLumiImage}
+                  resizeMode="contain"
+                />
+                <Text style={[styles.emptyTitle, { color: colors.textPrimary }]}>Tu historia empieza aquí</Text>
+                <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
+                  Cada registro es un paso hacia conocerte mejor. Lumi te acompañará en el camino.
+                </Text>
+                <View style={styles.emptySteps}>
+                  {[
+                    { icon: 'add-circle-outline', text: 'Toca aquí o el botón + para registrar tu ánimo', color: Colors.primary },
+                    { icon: 'bar-chart-outline', text: 'Descubre patrones en tu bienestar', color: '#FBBF24' },
+                    { icon: 'analytics-outline', text: 'Recibe insights personalizados', color: '#4ADE80' },
+                  ].map((step, i) => (
+                    <Animated.View key={i} entering={FadeInRight.duration(400).delay(600 + i * 120)}>
+                      <View style={[styles.emptyStep, { backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : step.color + '08' }]}>
+                        <View style={[styles.emptyStepIcon, { backgroundColor: step.color + '15' }]}>
+                          <Ionicons name={step.icon as any} size={18} color={step.color} />
+                        </View>
+                        <Text style={[styles.emptyStepText, { color: colors.textSecondary }]}>{step.text}</Text>
                       </View>
-                      <Text style={[styles.emptyStepText, { color: colors.textSecondary }]}>{step.text}</Text>
-                    </View>
-                  </Animated.View>
-                ))}
-              </View>
-            </GlassCard>
+                    </Animated.View>
+                  ))}
+                </View>
+              </GlassCard>
+            </Pressable>
           </Animated.View>
         )}
 
@@ -805,6 +815,7 @@ const styles = StyleSheet.create({
 
   // Empty state
   emptyCard: { alignItems: 'center', paddingVertical: 28, gap: 10 },
+  emptyLumiImage: { width: 110, height: 110, marginBottom: 4 },
   emptyTitle: { fontSize: 20, fontWeight: '700', fontFamily: 'Poppins_700Bold', marginTop: 4 },
   emptyText: { fontSize: 14, textAlign: 'center', paddingHorizontal: 16, lineHeight: 21, fontFamily: 'Poppins_400Regular' },
   emptySteps: { marginTop: 12, gap: 10, width: '100%', paddingHorizontal: 4 },

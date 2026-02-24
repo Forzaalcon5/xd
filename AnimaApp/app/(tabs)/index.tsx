@@ -1,9 +1,9 @@
-import React, { useMemo, useState, useCallback } from 'react';
+import React, { useMemo, useState, useCallback, useRef, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable, Modal, Image } from 'react-native';
 import Animated, { FadeInUp, FadeIn } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { useRouter, useNavigation } from 'expo-router';
 import { Colors, Gradients, MoodConfig, DAILY_AFFIRMATIONS } from '../../constants/theme';
 import {
   GlassCard, MoodButton, JewelButton,
@@ -15,20 +15,23 @@ import { EMOTIONAL_ROUTES } from '../../constants/clinicalContent';
 import { getAvatarSource } from '../../constants/avatars';
 
 export default function HomeScreen() {
-  const router = useRouter();
-  const { colors, isDark } = useTheme();
-  const userName = useStore((s) => s.userName);
-  const currentMood = useStore((s) => s.currentMood);
-  const setMood = useStore((s) => s.setMood);
-  const saveMoodEntry = useStore((s) => s.saveMoodEntry);
-  const recentActivities = useStore((s) => s.recentActivities);
-  const weeklyMoodData = useStore((s) => s.weeklyMoodData);
-  const currentPlan = useStore((s) => s.currentPlan);
-  const profileAvatar = useStore((s) => s.profileAvatar);
-  const avatarSource = getAvatarSource(profileAvatar);
-  const activeRoute = EMOTIONAL_ROUTES.find(r => r.id === currentPlan);
-  const [showNotifications, setShowNotifications] = useState(false);
-  const [showXPGain, setShowXPGain] = useState(false);
+   const router = useRouter();
+   const navigation = useNavigation();
+   const scrollViewRef = useRef<ScrollView>(null);
+   const { colors, isDark } = useTheme();
+   const userName = useStore((s) => s.userName);
+   const currentMood = useStore((s) => s.currentMood);
+   const setMood = useStore((s) => s.setMood);
+   const saveMoodEntry = useStore((s) => s.saveMoodEntry);
+   const recentActivities = useStore((s) => s.recentActivities);
+   const weeklyMoodData = useStore((s) => s.weeklyMoodData);
+   const currentPlan = useStore((s) => s.currentPlan);
+   const profileAvatar = useStore((s) => s.profileAvatar);
+   const avatarSource = getAvatarSource(profileAvatar);
+   const activeRoute = EMOTIONAL_ROUTES.find(r => r.id === currentPlan);
+   const [showNotifications, setShowNotifications] = useState(false);
+   const [showXPGain, setShowXPGain] = useState(false);
+   const [shouldScrollToMood, setShouldScrollToMood] = useState(false);
 
   const handleRegisterMood = useCallback(() => {
     saveMoodEntry();
@@ -68,11 +71,26 @@ export default function HomeScreen() {
     }
   }, [currentPlan]);
 
+  // Scroll a la sección de ánimo cuando viene de registro vacío
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('focus', () => {
+      const scrollToMood = useStore.getState()._scrollToMood;
+      if (scrollToMood && scrollViewRef.current) {
+        setTimeout(() => {
+          scrollViewRef.current?.scrollTo({ y: 900, animated: true });
+          useStore.setState({ _scrollToMood: false });
+        }, 100);
+      }
+    });
+    return unsubscribe;
+  }, [navigation]);
+
   return (
     <View style={styles.container}>
       <FloatingParticles count={6} />
 
       <ScrollView
+        ref={scrollViewRef}
         style={styles.scroll}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}

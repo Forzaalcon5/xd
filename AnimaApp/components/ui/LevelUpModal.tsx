@@ -40,34 +40,34 @@ export default function LevelUpModal() {
   return (
     <Modal visible={!!pendingLevelUp} transparent animationType="fade" onRequestClose={clearLevelUp}>
       <View style={styles.overlay}>
-        <Animated.View entering={ZoomIn.duration(500).springify().damping(12)} style={[styles.card, { backgroundColor: isDark ? '#1A1535' : '#FFF' }]}>
+        <Animated.View entering={ZoomIn.duration(800).springify().damping(14)} style={[styles.card, { backgroundColor: isDark ? '#1A1535' : '#FFF' }]}>
           {/* Gradient accent bar */}
           <LinearGradient colors={route?.gradient || ['#FCD34D', '#F59E0B']} style={styles.accentBar} />
 
           {/* Mascot */}
-          <Animated.View entering={FadeInUp.delay(200).duration(500)}>
+          <Animated.View entering={FadeInUp.delay(400).duration(700)}>
             <Mascot size={120} variant="levelup" />
           </Animated.View>
 
           {/* Level badge */}
-          <Animated.View entering={ZoomIn.delay(300).duration(400)} style={[styles.levelBadge, { backgroundColor: pendingLevelUp.color + '20', borderColor: pendingLevelUp.color }]}>
+          <Animated.View entering={FadeInUp.delay(600).duration(600)} style={[styles.levelBadge, { backgroundColor: pendingLevelUp.color + '20', borderColor: pendingLevelUp.color }]}>
             <Ionicons name={pendingLevelUp.icon as any} size={20} color={pendingLevelUp.color} />
             <Text style={[styles.levelBadgeText, { color: pendingLevelUp.color }]}>Nivel {pendingLevelUp.level}</Text>
           </Animated.View>
 
           {/* Title */}
-          <Animated.Text entering={FadeInUp.delay(400).duration(400)} style={[styles.title, { color: colors.textPrimary }]}>
+          <Animated.Text entering={FadeInUp.delay(800).duration(600)} style={[styles.title, { color: colors.textPrimary }]}>
             ¡{pendingLevelUp.title}!
           </Animated.Text>
 
           {/* Lumi message */}
-          <Animated.Text entering={FadeInUp.delay(500).duration(400)} style={[styles.message, { color: colors.textSecondary }]}>
+          <Animated.Text entering={FadeInUp.delay(1000).duration(600)} style={[styles.message, { color: colors.textSecondary }]}>
             {pendingLevelUp.lumiMessage}
           </Animated.Text>
 
           {/* Reward (if any) */}
           {pendingLevelUp.reward && (
-            <Animated.View entering={FadeInUp.delay(600).duration(400)} style={[styles.rewardCard, { backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(252,211,77,0.08)' }]}>
+            <Animated.View entering={FadeInUp.delay(1200).duration(600)} style={[styles.rewardCard, { backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(252,211,77,0.08)' }]}>
               <View style={styles.rewardHeader}>
                 <Ionicons name="gift-outline" size={16} color="#FCD34D" />
                 <Text style={[styles.rewardLabel, { color: '#FCD34D' }]}>RECOMPENSA DESBLOQUEADA</Text>
@@ -83,7 +83,7 @@ export default function LevelUpModal() {
           )}
 
           {/* Close button */}
-          <Animated.View entering={FadeIn.delay(700).duration(300)} style={{ width: '100%', marginTop: 16 }}>
+          <Animated.View entering={FadeInUp.delay(1400).duration(600)} style={{ width: '100%', marginTop: 16 }}>
             <Pressable
               onPress={() => {
                 Haptics.selectionAsync();
