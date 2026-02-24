@@ -46,6 +46,9 @@ app-example
 # IDE
 .vscode/
 .idea/
+.claude/
+.agent/
+.agents/
 
 # OS
 Thumbs.db
