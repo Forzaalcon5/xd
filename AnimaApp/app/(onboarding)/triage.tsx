@@ -212,7 +212,7 @@ const styles = StyleSheet.create({
   },
   questionContainer: {
     paddingHorizontal: 24,
-    paddingTop: 40,
+    paddingTop: 120,
   },
   questionText: {
     fontFamily: 'Poppins_600SemiBold',

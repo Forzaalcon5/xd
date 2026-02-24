@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, Pressable, Modal, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, Pressable, Modal, Dimensions, Linking } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, { FadeIn, FadeOut, SlideInDown, SlideOutDown, Easing } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
@@ -45,7 +45,7 @@ export function AdaptiveSOSButton() {
       case 'balance':
         return (
           <View style={styles.modalContent}>
-            <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>Respiración 4-7-8</Text>
+            <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>Respiración Calmante</Text>
             <Text style={[styles.modalMotivation, { color: colors.textLight }]}>
               No tienes que resolver todo hoy. <Text style={{ color: routeColor, textDecorationLine: 'underline' }}>Solo respira</Text>.
             </Text>
@@ -203,6 +203,43 @@ export function AdaptiveSOSButton() {
             
             {renderSOSContent()}
 
+            {/* ── Crisis Lines (always visible) ── */}
+            <View style={[styles.crisisSection, { borderTopColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)' }]}>
+              <Text style={[styles.crisisTitle, { color: colors.textLight }]}>Si necesitas ayuda profesional ahora</Text>
+              
+              <Pressable
+                style={[styles.crisisLine, { backgroundColor: '#EF4444' + '12' }]}
+                onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy); Linking.openURL('tel:106'); }}
+              >
+                <View style={[styles.crisisIconWrap, { backgroundColor: '#EF4444' + '20' }]}>
+                  <Ionicons name="call" size={18} color="#EF4444" />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.crisisName, { color: colors.textPrimary }]}>Línea 106</Text>
+                  <Text style={[styles.crisisDesc, { color: colors.textLight }]}>Salud mental • Gratuita • 24/7</Text>
+                </View>
+                <Ionicons name="arrow-forward" size={16} color="#EF4444" />
+              </Pressable>
+
+              <Pressable
+                style={[styles.crisisLine, { backgroundColor: colors.primary + '08' }]}
+                onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); Linking.openURL('tel:123'); }}
+              >
+                <View style={[styles.crisisIconWrap, { backgroundColor: colors.primary + '15' }]}>
+                  <Ionicons name="shield-checkmark" size={18} color={colors.primary} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.crisisName, { color: colors.textPrimary }]}>Línea 123</Text>
+                  <Text style={[styles.crisisDesc, { color: colors.textLight }]}>Emergencias • Nacional</Text>
+                </View>
+                <Ionicons name="arrow-forward" size={16} color={colors.primary} />
+              </Pressable>
+
+              <Text style={[styles.crisisNote, { color: colors.textLight }]}>
+                Aníma no reemplaza atención profesional. Si estás en peligro, llama ahora.
+              </Text>
+            </View>
+
           </GlassCard>
         </Animated.View>
       </Modal>
@@ -303,5 +340,31 @@ const styles = StyleSheet.create({
   },
   anclaText: {
     fontSize: 16, fontFamily: 'Poppins_500Medium', textAlign: 'center', lineHeight: 24,
+  },
+  // Crisis lines
+  crisisSection: {
+    width: '100%', borderTopWidth: 1, marginTop: 20, paddingTop: 16,
+  },
+  crisisTitle: {
+    fontSize: 11, fontFamily: 'Poppins_600SemiBold', textTransform: 'uppercase',
+    letterSpacing: 1, marginBottom: 12, textAlign: 'center',
+  },
+  crisisLine: {
+    flexDirection: 'row', alignItems: 'center', gap: 12,
+    padding: 12, borderRadius: 14, marginBottom: 8,
+  },
+  crisisIconWrap: {
+    width: 36, height: 36, borderRadius: 12,
+    justifyContent: 'center', alignItems: 'center',
+  },
+  crisisName: {
+    fontSize: 14, fontWeight: '700', fontFamily: 'Poppins_700Bold',
+  },
+  crisisDesc: {
+    fontSize: 11, fontFamily: 'Poppins_400Regular',
+  },
+  crisisNote: {
+    fontSize: 10, fontFamily: 'Poppins_400Regular', textAlign: 'center',
+    marginTop: 8, fontStyle: 'italic', lineHeight: 14,
   },
 });

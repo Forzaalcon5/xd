@@ -1,6 +1,10 @@
+/**
+ * AnimatedEntrance — Rewritten to use react-native-reanimated instead of moti.
+ * moti was removed as a phantom dependency during the audit cleanup.
+ */
 import React from 'react';
-import { View, StyleProp, ViewStyle } from 'react-native';
-import { MotiView } from 'moti';
+import { StyleProp, ViewStyle } from 'react-native';
+import Animated, { FadeInDown, FadeInUp, FadeInLeft, FadeInRight } from 'react-native-reanimated';
 
 interface AnimatedEntranceProps {
   children: React.ReactNode;
@@ -11,28 +15,21 @@ interface AnimatedEntranceProps {
 }
 
 export function AnimatedEntrance({ children, index = 0, delay = 100, style, from = 'bottom' }: AnimatedEntranceProps) {
-  const getFromTransform = () => {
+  const totalDelay = index * delay;
+
+  const getEntering = () => {
     switch (from) {
-      case 'bottom': return { translateY: 50 };
-      case 'top': return { translateY: -50 };
-      case 'left': return { translateX: -50 };
-      case 'right': return { translateX: 50 };
+      case 'top': return FadeInUp.delay(totalDelay).duration(500).springify().damping(20).stiffness(100);
+      case 'left': return FadeInLeft.delay(totalDelay).duration(500).springify().damping(20).stiffness(100);
+      case 'right': return FadeInRight.delay(totalDelay).duration(500).springify().damping(20).stiffness(100);
+      case 'bottom':
+      default: return FadeInDown.delay(totalDelay).duration(500).springify().damping(20).stiffness(100);
     }
   };
 
   return (
-    <MotiView
-      from={{ opacity: 0, ...getFromTransform() }}
-      animate={{ opacity: 1, translateY: 0, translateX: 0 }}
-      transition={{
-        type: 'spring',
-        delay: index * delay,
-        damping: 20,
-        stiffness: 100,
-      }}
-      style={style}
-    >
+    <Animated.View entering={getEntering()} style={style}>
       {children}
-    </MotiView>
+    </Animated.View>
   );
 }

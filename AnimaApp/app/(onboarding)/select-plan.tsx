@@ -57,7 +57,7 @@ export default function SelectPlanScreen() {
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         {/* Header Section */}
         <Animated.View entering={FadeInUp.duration(600)} style={styles.header}>
-          <Mascot size={80} variant="greeting" />
+          <Mascot size={110} variant="pensativo" />
           <Text style={[styles.title, { color: '#FFFFFF' }]}>
             {recommendedRouteEntity ? `Te sugerimos:\n${recommendedRouteEntity.title}` : `Hola, ${userName || 'amigo'} ✨`}
           </Text>

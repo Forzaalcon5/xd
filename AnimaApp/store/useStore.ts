@@ -1,10 +1,23 @@
+/**
+ * useStore.ts — Store global de la aplicación con Zustand + persistencia.
+ *
+ * CAMBIOS DE AUDITORÍA:
+ * 1. MoodType ahora se importa de constants/theme.ts (fuente única de verdad)
+ * 2. Se eliminó BOT_RESPONSES y getBotResponse() → movido a services/ChatEngine.ts
+ * 3. Se limpiaron los datos mock del estado inicial (moodHistory ahora empieza vacío)
+ * 4. Las actividades se movieron a constants/activities.ts (datos estáticos ≠ estado)
+ */
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { SoundService } from '../utils/SoundService';
 import { NotificationService } from '../utils/NotificationService';
+import { getBotResponse } from '../services/ChatEngine';
+import { MoodType } from '../constants/theme';
+import { DEFAULT_ACTIVITIES } from '../constants/activities';
 
-export type MoodType = 'animado' | 'mejor' | 'neutral' | 'triste' | 'muy_triste';
+// Re-export MoodType desde la fuente única para compatibilidad con imports existentes
+export { MoodType } from '../constants/theme';
 
 export interface ChatMessage {
   id: string;
@@ -34,8 +47,8 @@ export interface Activity {
 export interface JournalEntry {
   id: string;
   text: string;
-  x: number;   // Random X offset (-40 to +40)
-  y: number;   // Random Y offset (-30 to +30)
+  x: number;
+  y: number;
   date: string;
 }
 
@@ -54,7 +67,7 @@ interface AppState {
   
   // Plan (Emotional Route)
   currentPlan: string | null;
-  recommendedPlan: string | null; // Resultado del triage temporal
+  recommendedPlan: string | null;
   
   // Mood
   currentMood: MoodType | null;
@@ -83,58 +96,12 @@ interface AppState {
   setRecommendedPlan: (planId: string | null) => void;
   setMood: (mood: MoodType) => void;
   saveMoodEntry: (note?: string) => void;
+  removeMoodEntry: (id: string) => void;
   sendMessage: (text: string) => void;
   addJournalEntry: (entry: JournalEntry) => void;
   removeJournalEntry: (id: string) => void;
   updateJournalEntry: (id: string, text: string) => void;
   addCompletedActivity: (title: string, type: string) => void;
-}
-
-const BOT_RESPONSES: Record<string, string[]> = {
-  default: [
-    'Entiendo cómo te sientes. ¿Quieres contarme más sobre eso?',
-    'Gracias por compartir. Estoy aquí para escucharte. 💙',
-    'Eso es muy válido. ¿Cómo te gustaría sentirte?',
-    'Te escucho. Recuerda que cada emoción tiene su propósito. 🌱',
-  ],
-  ansiedad: [
-    'Siento que te sientas así. ¿Quieres intentarlo con un ejercicio de respiración?',
-    'La ansiedad puede ser abrumadora. Respira lento: inhala profundamente por la nariz... ahora exhala despacio por la boca...',
-  ],
-  triste: [
-    'Lamento que te sientas triste. Recuerda que está bien sentirse así. 💙',
-    'La tristeza es una emoción válida. ¿Qué tal si escribimos en tu Diario Estelar?',
-  ],
-  bien: [
-    '¡Me alegra saber eso! 😊 ¿Qué te ha hecho sentir bien hoy?',
-    '¡Qué bueno! Aprovechemos esta energía positiva. ¿Te gustaría hacer una actividad?',
-  ],
-  hola: [
-    '¡Hola! ¿Cómo te sientes hoy? Estoy aquí para acompañarte. 😊',
-    '¡Hola! Qué bueno verte. ¿En qué puedo ayudarte hoy?',
-  ],
-};
-
-function getBotResponse(userMessage: string): string {
-  const lower = userMessage.toLowerCase();
-  if (lower.includes('hola') || lower.includes('hey')) {
-    const responses = BOT_RESPONSES.hola;
-    return responses[Math.floor(Math.random() * responses.length)];
-  }
-  if (lower.includes('ansios') || lower.includes('nervios') || lower.includes('estres')) {
-    const responses = BOT_RESPONSES.ansiedad;
-    return responses[Math.floor(Math.random() * responses.length)];
-  }
-  if (lower.includes('triste') || lower.includes('mal') || lower.includes('llorar')) {
-    const responses = BOT_RESPONSES.triste;
-    return responses[Math.floor(Math.random() * responses.length)];
-  }
-  if (lower.includes('bien') || lower.includes('feliz') || lower.includes('genial')) {
-    const responses = BOT_RESPONSES.bien;
-    return responses[Math.floor(Math.random() * responses.length)];
-  }
-  const responses = BOT_RESPONSES.default;
-  return responses[Math.floor(Math.random() * responses.length)];
 }
 
 export const useStore = create<AppState>()(
@@ -156,38 +123,21 @@ export const useStore = create<AppState>()(
       currentPlan: null,
       recommendedPlan: null,
       
-      // Mood
+      // Mood — FIX: Estado inicial limpio, sin datos mock
       currentMood: null,
-      moodHistory: [
-        { id: '1', mood: 'neutral', date: 'Ayer', label: 'Neutral' },
-        { id: '2', mood: 'mejor', date: 'Anteayer', label: 'Mejor' },
-        { id: '3', mood: 'animado', date: 'Hace 3 días', label: 'Animado' },
-      ],
-      weeklyMoodData: [3, 4, 3, 2, 4, 3, 5],
+      moodHistory: [],
+      weeklyMoodData: [0, 0, 0, 0, 0, 0, 0],
       
       // Chat
       messages: [],
       isTyping: false,
       
-      // Journal (Gratitude)
+      // Journal
       journalEntries: [],
       
-      // Activities
-      activities: [
-        { id: '1', title: 'Respiración Guiada', description: 'Respira y relaja tu mente.', icon: 'water-outline', color: '#87CEEB', gradient: ['#89F7FE', '#66A6FF'], duration: '5 min' },
-        { id: '2', title: 'Diario Estelar', description: 'Escribe cosas positivas del día.', icon: 'journal-outline', color: '#FFD93D', gradient: ['#FFD200', '#F7971E'], duration: '10 min' },
-        { id: '3', title: 'Relajación Progresiva', description: 'Libera la tensión de tu cuerpo.', icon: 'leaf-outline', color: '#C4B7EB', gradient: ['#E0C3FC', '#8EC5FC'], duration: '8 min' },
-        { id: '4', title: 'Conexión 5 Sentidos', description: 'Atención plena interactiva para la ansiedad.', icon: 'planet-outline', color: '#A8E6CF', gradient: ['#D4FC79', '#96E6A1'], duration: '5 min' },
-        { id: '5', title: 'Cápsula de Papel', description: 'Desahoga y quema tus pensamientos negativos.', icon: 'flame-outline', color: '#FF7E67', gradient: ['#FF9A44', '#FC6076'], duration: 'Actividad libre' },
-        { id: '6', title: 'Pomodoro de Paz', description: 'Céntrate con descansos activos y sonidos de lluvia.', icon: 'timer-outline', color: '#4ADE80', gradient: ['#4ADE80', '#38BDF8'], duration: '25 min' },
-        { id: '7', title: 'Diario Ciego', description: 'Escribe sin censura ni edición. Tus palabras desaparecerán solas.', icon: 'eye-off-outline', color: '#B39DDB', gradient: ['#D1C4E9', '#9575CD'], duration: 'Ruta Descubrimiento' },
-        { id: '8', title: 'Astillero de Victorias', description: 'Avanza tu barco celebrando cada pequeño paso.', icon: 'boat-outline', color: '#FFB74D', gradient: ['#FFE082', '#FF8A65'], duration: 'Ruta Renacer' },
-        { id: '9', title: 'Abrazo de Mariposa', description: 'Estimulación bilateral para calmar tu sistema nervioso.', icon: 'heart-half-outline', color: '#F48FB1', gradient: ['#FFCDD2', '#F06292'], duration: 'Ruta Autocompasión' },
-        { id: '10', title: 'Mensaje en una Botella', description: 'Lanza un mensaje al mar y recibe aliento anónimo.', icon: 'paper-plane-outline', color: '#4FC3F7', gradient: ['#81D4FA', '#29B6F6'], duration: 'Ruta Soledad' },
-      ],
-      recentActivities: [
-        { title: 'Respiración Guiada', time: 'Hoy • 5 min', detail: 'Relajaste', icon: 'water-outline', color: '#87CEEB' },
-      ],
+      // Activities — Datos estáticos importados desde constants
+      activities: DEFAULT_ACTIVITIES,
+      recentActivities: [],
       
       // Actions
       login: (email, name) => set({ isAuthenticated: true, userEmail: email, userName: name || 'Usuario' }),
@@ -222,13 +172,10 @@ export const useStore = create<AppState>()(
           note,
         };
 
-        // Calculate score (1-5)
         const scores: Record<MoodType, number> = {
           animado: 5, mejor: 4, neutral: 3, triste: 2, muy_triste: 1,
         };
         const score = scores[currentMood];
-        
-        // Update weekly data: remove first, add new at end (FIFO for chart)
         const newWeekly = [...get().weeklyMoodData.slice(1), score];
 
         set({ 
@@ -236,6 +183,20 @@ export const useStore = create<AppState>()(
           currentMood: null,
           weeklyMoodData: newWeekly,
         });
+      },
+      removeMoodEntry: (id: string) => {
+        const { moodHistory } = get();
+        const updated = moodHistory.filter(e => e.id !== id);
+        // Recalculate weeklyMoodData from last 7 entries
+        const scores: Record<MoodType, number> = {
+          animado: 5, mejor: 4, neutral: 3, triste: 2, muy_triste: 1,
+        };
+        const last7 = updated.slice(0, 7);
+        const newWeekly = Array.from({ length: 7 }, (_, i) => {
+          const entry = last7[6 - i];
+          return entry ? scores[entry.mood as MoodType] || 0 : 0;
+        });
+        set({ moodHistory: updated, weeklyMoodData: newWeekly });
       },
       sendMessage: (text) => {
         const { messages } = get();
@@ -247,6 +208,7 @@ export const useStore = create<AppState>()(
         };
         set({ messages: [...messages, userMsg], isTyping: true });
         
+        // ChatEngine ahora es un servicio externo — fácil de reemplazar por API real
         setTimeout(() => {
           const botMsg: ChatMessage = {
             id: (Date.now() + 1).toString(),
@@ -279,33 +241,26 @@ export const useStore = create<AppState>()(
       },
       addCompletedActivity: (title: string, type: string) => {
         const { recentActivities } = get();
-        // Determine icon/color based on type
         let icon = 'checkmark-circle-outline';
-        let color = '#38B2AC'; // Mint
+        let color = '#38B2AC';
         if (type === 'respiracion') { icon = 'water-outline'; color = '#87CEEB'; }
         if (type === 'meditacion') { icon = 'sparkles-outline'; color = '#A8E6CF'; }
         
-        const newActivity = {
-          title,
-          time: 'Recién',
-          detail: 'Completado',
-          icon,
-          color,
-        };
-        // Keep only top 5 recent activities to avoid endless list
+        const newActivity = { title, time: 'Recién', detail: 'Completado', icon, color };
         set({ recentActivities: [newActivity, ...recentActivities].slice(0, 5) });
       },
     }),
     {
       name: 'anima-app-storage',
       storage: createJSONStorage(() => AsyncStorage),
-      // Only persist user data, not transient UI state
       partialize: (state) => ({
         isAuthenticated: state.isAuthenticated,
         userName: state.userName,
         userEmail: state.userEmail,
+        profileAvatar: state.profileAvatar,
         notificationsEnabled: state.notificationsEnabled,
         currentPlan: state.currentPlan,
+        recommendedPlan: state.recommendedPlan,
         moodHistory: state.moodHistory,
         weeklyMoodData: state.weeklyMoodData,
         messages: state.messages,

@@ -9,6 +9,7 @@ import { GlassCard, SectionHeader, Mascot, JewelButton } from '../../components/
 import { useStore, MoodType } from '../../store/useStore';
 import { useTheme } from '../../hooks/useTheme';
 import { SoundService } from '../../utils/SoundService'; 
+import * as Haptics from 'expo-haptics';
 import { NotificationService } from '../../utils/NotificationService';
 import { CLINICAL_DISCLAIMER } from '../../constants/clinicalContent';
 import { AVATAR_CATEGORIES, getAvatarSource, AvatarItem } from '../../constants/avatars';
@@ -146,7 +147,7 @@ export default function PerfilScreen() {
             {configItems.map((item, i) => (
               <Pressable 
                 key={i} 
-                onPress={item.action}
+                onPress={() => { Haptics.selectionAsync(); item.action?.(); }}
                 style={({ pressed }) => [
                   styles.settingsItem, 
                   i < configItems.length - 1 && [styles.settingsBorder, { borderBottomColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.04)' }],
@@ -181,7 +182,7 @@ export default function PerfilScreen() {
             {supportItems.map((item, i) => (
               <Pressable 
                 key={i} 
-                onPress={item.action}
+                onPress={() => { Haptics.selectionAsync(); item.action?.(); }}
                 style={({ pressed }) => [
                   styles.settingsItem, 
                   i < supportItems.length - 1 && [styles.settingsBorder, { borderBottomColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.04)' }],
@@ -230,7 +231,7 @@ export default function PerfilScreen() {
 
         {/* Footer info */}
         <View style={styles.footerSection}>
-          <Mascot size={60} variant="star" />
+          <Mascot size={100} variant="star" />
           <Text style={[styles.versionText, { color: colors.textLight }]}>Aníma v1.0.2 • Build 2026</Text>
         </View>
 

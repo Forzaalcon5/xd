@@ -6,6 +6,7 @@ import {
 import Animated, { FadeInUp, FadeIn } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
 import { Colors, Gradients } from '../../constants/theme';
 import { useTheme } from '../../hooks/useTheme';
 import { ChatBubble, TypingIndicator, GlassCard, Mascot } from '../../components/ui';
@@ -57,6 +58,7 @@ export default function ChatScreen() {
   const handleSend = () => {
     const text = input.trim();
     if (!text) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     sendMessage(text);
     setInput('');
     setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 100);
@@ -64,6 +66,7 @@ export default function ChatScreen() {
   };
 
   const handleQuickReply = (text: string) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     sendMessage(text);
     setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 100);
     setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 2000);

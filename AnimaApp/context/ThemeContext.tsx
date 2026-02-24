@@ -48,7 +48,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         next = prev === 'light' ? 'dark' : 'light';
       }
       
-      console.log(`[Theme] Toggling from ${prev} to ${next}`);
+      // Debug log removed (was leaking state info to console in production)
       AsyncStorage.setItem('themeMode', next);
       return next;
     });

@@ -1,40 +1,73 @@
+/**
+ * GlassCard — Tarjeta con efecto glassmorphism, animación spring al presionar,
+ * haptic feedback y sonido de click.
+ * 
+ * ¿POR QUÉ se extrajo aquí?
+ * Es el componente UI más reutilizado de toda la app (~30+ usos).
+ * Tenerlo en su propio archivo facilita mejorarlo sin tocar otros componentes.
+ */
 import React from 'react';
-import { View, StyleSheet, StyleProp, ViewStyle } from 'react-native';
-import { BlurView } from 'expo-blur';
+import { View, Pressable, ViewStyle, StyleSheet } from 'react-native';
+import Animated, { useSharedValue, useAnimatedStyle, withSpring } from 'react-native-reanimated';
+import * as Haptics from 'expo-haptics';
+import { SoundService } from '../../utils/SoundService';
 import { useTheme } from '../../hooks/useTheme';
+import { Colors, BorderRadius, Shadows } from '../../constants/theme';
 
 interface GlassCardProps {
   children: React.ReactNode;
-  style?: StyleProp<ViewStyle>;
+  style?: ViewStyle;
+  onPress?: () => void;
+  intensity?: number;
 }
 
-export function GlassCard({ children, style }: GlassCardProps) {
-  const { isDark, colors } = useTheme();
-  return (
-    <View style={[
-      styles.container, 
+export function GlassCard({ children, style, onPress, intensity = 50 }: GlassCardProps) {
+  const { colors, isDark } = useTheme();
+  const scale = useSharedValue(1);
+  const animStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
+
+  const handlePressIn = () => { if (onPress) scale.value = withSpring(0.97, { damping: 15, stiffness: 200 }); };
+  const handlePressOut = () => { if (onPress) scale.value = withSpring(1, { damping: 15, stiffness: 200 }); };
+
+  const Content = (
+    <Animated.View style={[
+      styles.glassCard, 
+      animStyle, 
+      style, 
       { 
-        backgroundColor: isDark ? 'rgba(15,23,42,0.4)' : 'rgba(255, 255, 255, 0.85)',
-        borderColor: isDark ? 'rgba(255,255,255,0.08)' : 'transparent',
-        borderWidth: isDark ? 1 : 0
-      },
-      style
+        backgroundColor: colors.bgCard,
+        borderColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(255,255,255,0.6)',
+      }  
     ]}>
       {children}
-    </View>
+    </Animated.View>
   );
+
+  if (onPress) {
+    return (
+      <Pressable
+        onPress={() => {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          SoundService.play('click');
+          onPress();
+        }}
+        onPressIn={handlePressIn}
+        onPressOut={handlePressOut}
+      >
+        {Content}
+      </Pressable>
+    );
+  }
+  return Content;
 }
 
 const styles = StyleSheet.create({
-  container: {
-    borderRadius: 20,
-    overflow: 'hidden',
-    // Background color dynamically handled above
-    shadowColor: '#5B9BD5',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 10,
-    elevation: 4,
-    padding: 0,
+  glassCard: {
+    backgroundColor: Colors.bgCard,
+    borderRadius: BorderRadius.xl,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.6)',
+    ...Shadows.small,
   },
 });

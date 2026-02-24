@@ -1,1 +1,0 @@
-app/actividades/capsula.tsx(107,10): error TS2739: Type '{ icon: string; onPress: () => void; }' is missing the following properties from type 'FeatureButtonProps': title, color

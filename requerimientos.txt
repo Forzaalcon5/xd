@@ -1,240 +1,101 @@
-Número Requerimientos Funcionales
-RF-01 Registro de usuario
+Número	Requerimiento Funcional	Descripción
 
-La aplicación debe permitir al usuario
-registrarse ingresando datos básicos
-(correo, contraseña u otro método definido).
-el sistema detecta si los datos ingresados
-son de un usuario o de un administrador
+RF-01	Registro de usuario	La aplicación debe permitir al usuario registrarse ingresando datos básicos (nombre, correo electrónico).
 
-RF-02 Inicio de sesión
+RF-02	Inicio de sesión	La aplicación debe permitir al usuario iniciar sesión con sus credenciales registradas y validarlas en el sistema.
 
-La aplicación debe permitir al usuario iniciar
-sesión con sus credenciales registradas y
-validarlas en el sistema.
-RF-03 Recuperación de contraseña
-La aplicación debe permitir al usuario
-recuperar su contraseña en caso de olvido.
+RF-03	Cierre de sesión	La aplicación debe permitir al usuario cerrar sesión de forma segura desde la pantalla de perfil.
 
-RF-04 Interacción conversacional
-La aplicación debe permitir al usuario
-comunicarse con un chatbot mediante
-mensajes de texto.
-RF-05 Validación emocional
+RF-04	Triage emocional inicial	La aplicación debe presentar al usuario un cuestionario emocional inicial (onboarding) que determine su ruta de acompañamiento personalizada.
 
-El chatbot debe responder utilizando un
-lenguaje empático, calmado y sin juicios
-RF-06 Detección de estado emocional
-El sistema debe identificar emociones
-básicas expresadas por el usuario
-(ansiedad, tristeza, estrés).
-RF-07 Sugerencia de actividades
-El chatbot debe sugerir actividades de
-regulación emocional según el estado
-detectado.
+RF-05	Rutas emocionales personalizadas	La aplicación debe ofrecer al menos 5 rutas emocionales diferenciadas, cada una con contenido, actividades, frases y estrategias adaptadas al perfil del usuario.
 
-RF-08 Acompañamiento continuo
-El chatbot debe estar disponible para
-interactuar con el usuario en cualquier
-momento.
+RF-06	Cambio de ruta emocional	La aplicación debe permitir al usuario cambiar su ruta emocional activa en cualquier momento desde la configuración de su perfil.
 
-RF-09 Visualización de actividades
+RF-07	Interacción conversacional con chatbot	La aplicación debe permitir al usuario comunicarse con un chatbot empático (Lumi) mediante mensajes de texto, con respuestas adaptadas a la ruta emocional activa.
 
-La aplicación debe mostrar un listado de
-actividades disponibles (respiración guiada,
-meditación, diario de gratitud, relajación
-progresiva). (las actividades mostradas y
-activa son creadas y habilitadas por el
-administrador)
-RF-10 Asignación de tareas:
+RF-08	Validación emocional del chatbot	El chatbot debe responder utilizando lenguaje empático, calmado, sin juicios y basado en principios de escucha activa.
 
-La aplicación deberá incentivar al
-usuario a realizar tareas sencillas
-dependen del estado del usuario
+RF-09	Registro de estado de ánimo	La aplicación debe permitir al usuario registrar su estado emocional diario seleccionando entre al menos 5 niveles de ánimo.
 
-RF-11 Historial emocional
+RF-10	Historial emocional y progreso	La aplicación debe almacenar el historial de registros emocionales y mostrar una visualización gráfica del progreso semanal.
 
-La aplicación debe almacenar el historial de
-registros emocionales del usuario.
-RF-12 Visualización de progreso emocional
-La aplicación debe mostrar gráficos del
-estado emocional del usuario por día o
-semana.
+RF-11	Actividades de bienestar emocional	La aplicación debe ofrecer un catálogo de actividades interactivas de regulación emocional (respiración, relajación muscular, escritura terapéutica, grounding sensorial, entre otras).
 
-RF-13 Detección de riesgo emocional
-La aplicación debe identificar palabras o
-patrones asociados a riesgo emocional
-elevado
+RF-12	Actividades exclusivas por ruta	Ciertas actividades deben estar disponibles únicamente para la ruta emocional a la que pertenecen, con un mensaje de redirección si el usuario intenta acceder desde otra ruta.
 
-RF-14 Navegación entre secciones
-La aplicación debe permitir al usuario
-navegar entre las secciones principales.
+RF-13	Micro-retos aleatorios	La aplicación debe ofrecer retos breves y aleatorios adaptados a la ruta del usuario, orientados a la activación conductual.
 
-RF-15 Cierre de sesión
+RF-14	Radar de conexión (autocuidado)	La aplicación debe incluir un checklist interactivo de actividades de autocuidado contextualizado según la ruta emocional.
 
-La aplicación debe permitir al usuario cerrar
-sesión de forma segura.
+RF-15	Botón SOS adaptativo	La aplicación debe incluir un botón de ayuda accesible desde cualquier pantalla, cuya intervención varíe según la ruta emocional activa del usuario.
 
-RNF-01 Confidencialidad de datos
+RF-16	Afirmación diaria personalizada	La aplicación debe mostrar una frase motivacional diaria en la pantalla principal, adaptada a la ruta emocional del usuario, que cambie automáticamente cada día.
 
-La aplicación debe garantizar la privacidad
-de la información emocional del usuario.
+RF-17	Saludo dinámico personalizado	La aplicación debe mostrar un saludo personalizado según la hora del día y el nombre del usuario en la pantalla principal.
 
-RNF-02 Protección de datos
+RF-18	Indicador de progreso semanal	La aplicación debe mostrar un indicador visual (anillo de progreso) que represente el bienestar emocional semanal basado en los registros del usuario.
 
-Los datos deben almacenarse de forma
-segura utilizando mecanismos de cifrado.
+RF-19	Mascota acompañante	La aplicación debe incluir un personaje mascota visual presente en las pantallas principales, con variantes emocionales que transmitan empatía y acompañamiento.
 
-RNF-03 Acceso seguro
+RF-20	Sonidos ambientales	La aplicación debe ofrecer la reproducción de sonidos ambientales relajantes (lluvia, naturaleza, océano) como herramienta complementaria de regulación emocional.
 
-El sistema debe impedir accesos no
-autorizados a cuentas de usuario.
+RF-21	Notificaciones motivacionales	La aplicación debe enviar notificaciones locales con recordatorios y mensajes motivacionales configurables por el usuario.
 
-RNF-04 Tiempo de respuesta
+RF-22	Perfil de usuario personalizable	La aplicación debe permitir al usuario editar su nombre y seleccionar un avatar de perfil a partir de un catálogo de imágenes prediseñadas organizadas por categorías.
 
-La aplicación debe responder a las
-interacciones del usuario en menos de 2
-segundos.
+RF-23	Avatar visible en la experiencia	El avatar del usuario debe mostrarse de manera consistente en las áreas principales de la aplicación (perfil, chat, pantalla principal, barra de navegación).
 
-RNF-05
+RF-24	Diario de gratitud	La aplicación debe incluir una herramienta de diario positivo donde el usuario pueda registrar cosas por las que se siente agradecido, con una representación visual de sus entradas.
 
-Disponibilidad
-La aplicación debe estar disponible las 24
-horas del día, los 7 días de la semana.
+RF-25	Navegación entre secciones	La aplicación debe permitir al usuario navegar entre las secciones principales mediante una barra de navegación inferior con iconografía clara.
 
-RNF-06 Interfaz intuitiva
+RF-26	Aviso médico y disclaimer	La aplicación debe mostrar un aviso clínico accesible que informe que no reemplaza la atención profesional y recomiende buscar ayuda ante señales de riesgo.
 
-La aplicación debe ser fácil de usar para
-personas sin conocimientos técnicos.
-RNF-07 Diseño amigable y calmado
+RF-27	Bloqueo nocturno de actividades	La aplicación debe limitar el acceso a actividades estimulantes después de cierta hora para fomentar la desconexión digital y la higiene del sueño (exclusivo de ruta Balance).
 
-La interfaz debe utilizar colores suaves,
-tipografía legible y elementos visuales
-tranquilizadores.
-RNF-08 Accesibilidad
+RF-28	Modo oscuro y claro	La aplicación debe ofrecer un modo visual oscuro y un modo claro, alternables por el usuario desde la configuración.
 
-La aplicación debe ser usable por personas
-con dificultades visuales o cognitivas leves.
+---
 
-RNF-09 Lenguaje respetuoso
+Número	Requerimiento No Funcional	Descripción
 
-El sistema debe evitar lenguaje ofensivo,
-invalidante o discriminatorio.
-RNF-10 No diagnóstico clínico
+RNF-01	Confidencialidad de datos	La aplicación debe garantizar la privacidad de la información emocional del usuario, almacenando los datos exclusivamente en el dispositivo.
 
-La aplicación no debe emitir diagnósticos
-psicológicos ni médicos.
-RNF-11 Derivación responsable
+RNF-02	Protección de datos	Los datos personales y emocionales deben almacenarse de forma segura utilizando mecanismos de persistencia cifrada del sistema operativo.
 
-Ante señales de riesgo, la aplicación debe
-priorizar la seguridad del usuario.
+RNF-03	Acceso seguro	El sistema debe impedir accesos no autorizados a cuentas de usuario mediante validación de credenciales.
 
-RNF-12 Escalabilidad
+RNF-04	Tiempo de respuesta	La aplicación debe responder a las interacciones del usuario en menos de 2 segundos bajo condiciones normales de uso.
 
-La aplicación debe permitir la incorporación
-futura de nuevas actividades y funciones.
+RNF-05	Disponibilidad	La aplicación debe funcionar sin conexión a internet para las funcionalidades principales (actividades, registro de ánimo, chat local).
 
-RNF-13
+RNF-06	Interfaz intuitiva	La aplicación debe ser fácil de usar para personas sin conocimientos técnicos, con navegación clara y flujo lógico.
 
-Mantenibilidad
-El sistema debe estar diseñado para
-facilitar actualizaciones y correcciones.
+RNF-07	Diseño visual calmado y premium	La interfaz debe utilizar paletas de colores suaves, tipografía profesional, gradientes y elementos visuales tranquilizadores que transmitan seguridad y calidez.
 
-RNF-14.
+RNF-08	Accesibilidad	La aplicación debe ser usable por personas con dificultades visuales o cognitivas leves, respetando contrastes mínimos y tamaños de fuente legibles.
 
-Control de acceso por rol
-El sistema debe restringir el acceso a
-funcionalidades según el rol del usuario.
+RNF-09	Lenguaje respetuoso e inclusivo	El sistema debe utilizar lenguaje respetuoso, empático y no discriminatorio en todas sus interacciones y contenido.
 
-RNF-15.
+RNF-10	No diagnóstico clínico	La aplicación no debe emitir diagnósticos psicológicos ni médicos bajo ninguna circunstancia.
 
-Protección de privacidad frente al
-administrador
-El sistema debe impedir que el
-administrador acceda a conversaciones o
-registros emocionales personales.
+RNF-11	Derivación responsable	Ante señales de riesgo emocional, la aplicación debe priorizar la seguridad del usuario proporcionando información de contacto profesional.
 
-RNF-16
+RNF-12	Escalabilidad	La arquitectura debe permitir la incorporación futura de nuevas actividades, rutas emocionales y funcionalidades sin reestructuración mayor.
 
-Gestión dinámica de contenido
-La aplicación debe permitir la modificación
-de actividades sin necesidad de actualizar
-la app.
+RNF-13	Mantenibilidad	El código debe estar estructurado modularmente (componentes reutilizables, estado centralizado, tipado estricto) para facilitar actualizaciones.
 
-RF-16 Afirmación diaria
+RNF-14	Rendimiento adaptativo	La aplicación debe adaptar la calidad de animaciones y efectos visuales según las capacidades del dispositivo para garantizar fluidez.
 
-La aplicación debe mostrar una frase
-motivacional o afirmación positiva diaria
-al usuario en la pantalla principal, con
-tipografía editorial elegante. La frase
-debe cambiar automáticamente cada día.
+RNF-15	Tipografía profesional	La aplicación debe utilizar una fuente tipográfica profesional consistente en todos los elementos de interfaz.
 
-RF-17 Saludo dinámico personalizado
+RNF-16	Transiciones y animaciones fluidas	La aplicación debe implementar transiciones animadas entre pantallas y micro-interacciones para una experiencia de navegación fluida.
 
-La aplicación debe mostrar un saludo
-personalizado según la hora del día
-(Buenos días/tardes/noches) y el nombre
-del usuario en la pantalla principal.
+RNF-17	Iconografía consistente	La aplicación debe utilizar iconos vectoriales profesionales y consistentes en todas las plataformas y dispositivos.
 
-RF-18 Indicador de progreso de bienestar
+RNF-18	Compatibilidad multiplataforma	La aplicación debe funcionar correctamente en dispositivos Android e iOS.
 
-La aplicación debe mostrar un anillo de
-progreso animado que represente el
-bienestar emocional semanal del usuario
-basado en sus registros de ánimo.
+RNF-19	Prevención de fugas de memoria	La aplicación debe implementar limpieza adecuada de temporizadores, animaciones y procesos al desmontar pantallas para evitar fugas de memoria.
 
-RF-19 Mascota acompañante visual
-
-La aplicación debe incluir un personaje
-mascota visual (Aníma) presente en las
-pantallas principales, que transmita
-empatía y acompañamiento a través de
-diferentes variantes (saludando, meditando,
-empático, respirando, feliz).
-
-RF-20 Sistema de iconografía emocional
-
-La aplicación debe representar los estados
-emocionales mediante iconos vectoriales
-estilizados (no emojis genéricos) que se
-iluminen con colores temáticos cuando el
-usuario los seleccione.
-
-RF-21 Efectos visuales de partículas
-
-La aplicación debe mostrar partículas
-animadas flotantes alrededor de la mascota
-en la pantalla principal, generando un
-efecto de "energía vital" sutil y
-tranquilizador.
-
-RF-22 Fondo dinámico Aurora
-
-La aplicación debe incluir un fondo
-animado con gradientes suaves (aurora)
-que se muevan lentamente, creando una
-atmósfera viva y calmada sin distraer
-al usuario.
-
-RNF-17 Tipografía premium
-
-La aplicación debe utilizar una fuente
-tipográfica profesional (Poppins) en
-todos los títulos, etiquetas y botones
-para garantizar una apariencia premium
-y legibilidad óptima.
-
-RNF-18 Transiciones suaves entre pantallas
-
-La aplicación debe implementar transiciones
-animadas (fade, slide) entre pantallas para
-ofrecer una experiencia de navegación fluida
-y cinematográfica.
-
-RNF-19 Iconografía profesional
-
-La aplicación debe utilizar iconos
-vectoriales profesionales (Ionicons) en
-lugar de emojis del sistema para garantizar
-consistencia visual en todos los dispositivos
-y plataformas.
+RNF-20	Diversidad e inclusión visual	Los elementos visuales de personalización (avatares) deben representar diversidad étnica, de género y de estilos para que los usuarios se sientan identificados.

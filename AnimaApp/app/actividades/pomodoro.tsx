@@ -25,8 +25,13 @@ const AnimatedG = Animated.createAnimatedComponent(G);
 
 type TimerMode = 'focus' | 'break';
 
-const FocusTime = 25 * 60; // 25 mins in seconds
-const BreakTime = 5 * 60;  // 5 mins in seconds
+// Min/Max ranges
+const FOCUS_MIN = 5 * 60;
+const FOCUS_MAX = 60 * 60;
+const FOCUS_STEP = 5 * 60;  // 5 min steps
+const BREAK_MIN = 1 * 60;
+const BREAK_MAX = 15 * 60;
+const BREAK_STEP = 1 * 60;  // 1 min steps
 
 const safeAction = async (action: 'play' | 'pause' | 'stop', sound: Audio.Sound | null) => {
   if (!sound) return;
@@ -46,12 +51,16 @@ export default function PomodoroScreen() {
   const router = useRouter();
   const { colors, isDark } = useTheme();
 
-  const [timeLeft, setTimeLeft] = useState(FocusTime);
+  const [focusDuration, setFocusDuration] = useState(25 * 60); // default 25 min
+  const [breakDuration, setBreakDuration] = useState(5 * 60);  // default 5 min
+  const [timeLeft, setTimeLeft] = useState(25 * 60);
   const [isRunning, setIsRunning] = useState(false);
   const [mode, setMode] = useState<TimerMode>('focus');
   const [ambientSound, setAmbientSound] = useState<Audio.Sound | null>(null);
   const [isMuted, setIsMuted] = useState(false);
   const [showCompletion, setShowCompletion] = useState(false);
+
+  const currentDuration = mode === 'focus' ? focusDuration : breakDuration;
 
   const progress = useSharedValue(1); // 1 = full, 0 = empty
 
@@ -68,7 +77,7 @@ export default function PomodoroScreen() {
         setTimeLeft((prev) => {
           const next = prev - 1;
           if (next >= 0) {
-            progress.value = withTiming(next / (mode === 'focus' ? FocusTime : BreakTime), { duration: 1000, easing: Easing.linear });
+            progress.value = withTiming(next / currentDuration, { duration: 1000, easing: Easing.linear });
           }
           return next;
         });
@@ -163,11 +172,11 @@ export default function PomodoroScreen() {
       // Auto-switch mode after 3 seconds
       if (mode === 'focus') {
         setMode('break');
-        setTimeLeft(BreakTime);
+        setTimeLeft(breakDuration);
         progress.value = 1;
       } else {
         setMode('focus');
-        setTimeLeft(FocusTime);
+        setTimeLeft(focusDuration);
         progress.value = 1;
       }
       // Unload audio to force a new load (Lofi2 vs Lofi) when they press play again
@@ -182,16 +191,35 @@ export default function PomodoroScreen() {
     setIsRunning(false);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     await safeAction('stop', ambientSound);
-    const total = mode === 'focus' ? FocusTime : BreakTime;
-    setTimeLeft(total);
+    setTimeLeft(currentDuration);
     progress.value = withTiming(1, { duration: 500 });
+  };
+
+  // ─── Configurable time stepper ───
+  const adjustTime = (direction: 'up' | 'down') => {
+    if (isRunning) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    const step = mode === 'focus' ? FOCUS_STEP : BREAK_STEP;
+    const min = mode === 'focus' ? FOCUS_MIN : BREAK_MIN;
+    const max = mode === 'focus' ? FOCUS_MAX : BREAK_MAX;
+    const current = mode === 'focus' ? focusDuration : breakDuration;
+    const newVal = direction === 'up' 
+      ? Math.min(current + step, max) 
+      : Math.max(current - step, min);
+    if (mode === 'focus') {
+      setFocusDuration(newVal);
+    } else {
+      setBreakDuration(newVal);
+    }
+    setTimeLeft(newVal);
+    progress.value = 1;
   };
 
   const switchMode = (newMode: TimerMode) => {
     if (mode === newMode) return;
     setIsRunning(false);
     setMode(newMode);
-    const total = newMode === 'focus' ? FocusTime : BreakTime;
+    const total = newMode === 'focus' ? focusDuration : breakDuration;
     setTimeLeft(total);
     progress.value = 1;
     if (ambientSound) {
@@ -282,7 +310,7 @@ export default function PomodoroScreen() {
 
         {/* Mascot & Context */}
         <Animated.View style={styles.mascotArea}>
-          <Mascot size={80} variant={mode === 'focus' ? 'meditating' : 'resting'} />
+          <Mascot size={110} variant={(mode === 'focus' ? 'estudioso' : 'resting') as any} />
           <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
             {mode === 'focus' 
               ? 'Lumi respira contigo mientras te concentras.\nEl mundo exterior puede esperar un rato.'
@@ -347,7 +375,28 @@ export default function PomodoroScreen() {
           </Svg>
           
           <View style={styles.timeTextWrap}>
+            {!isRunning && (
+              <Pressable 
+                style={[styles.stepperBtn, { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.04)' }]} 
+                onPress={() => adjustTime('up')}
+              >
+                <Ionicons name="chevron-up" size={22} color={primaryColor} />
+              </Pressable>
+            )}
             <Text style={[styles.timeText, { color: colors.textPrimary }]}>{timeString}</Text>
+            {!isRunning && (
+              <Pressable 
+                style={[styles.stepperBtn, { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.04)' }]} 
+                onPress={() => adjustTime('down')}
+              >
+                <Ionicons name="chevron-down" size={22} color={primaryColor} />
+              </Pressable>
+            )}
+            {!isRunning && (
+              <Text style={[styles.stepperHint, { color: colors.textLight }]}>
+                {mode === 'focus' ? '±5 min' : '±1 min'}
+              </Text>
+            )}
           </View>
         </View>
 
@@ -482,5 +531,14 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 10,
     lineHeight: 24,
-  }
+  },
+  stepperBtn: {
+    width: 40, height: 32,
+    borderRadius: 12,
+    justifyContent: 'center', alignItems: 'center',
+  },
+  stepperHint: {
+    fontSize: 11, fontFamily: 'Poppins_400Regular',
+    marginTop: 2, opacity: 0.6,
+  },
 });

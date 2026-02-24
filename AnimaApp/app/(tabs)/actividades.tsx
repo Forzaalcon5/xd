@@ -8,6 +8,7 @@ import { Colors, Gradients } from '../../constants/theme';
 import { useTheme } from '../../hooks/useTheme';
 import { ActivityCard, SectionHeader, Mascot } from '../../components/ui';
 import { useStore } from '../../store/useStore';
+import { ACTIVITY_ROUTES, EXCLUSIVE_ACTIVITIES } from '../../constants/activities';
 import { Pressable } from 'react-native';
 
 export default function ActividadesScreen() {
@@ -20,70 +21,37 @@ export default function ActividadesScreen() {
   const isLateNight = React.useMemo(() => {
     if (mockLateNight) return true;
     const hour = new Date().getHours();
-    return hour >= 22 || hour < 5; // 10 PM to 4:59 AM
+    return hour >= 22 || hour < 5;
   }, [mockLateNight]);
 
+  /**
+   * FIX: Routing por ID en vez de string matching del título.
+   * Antes se usaba activity.title.toLowerCase().includes('...') — si alguien
+   * cambiaba un título, la navegación se rompía silenciosamente.
+   * Ahora usamos un mapa id → ruta definido en constants/activities.ts.
+   */
   const handleActivityPress = (activity: typeof activities[0]) => {
-    // Módulo 6: El Semáforo de Energía (Balance Exclusive)
-    if (currentPlan === 'balance' && isLateNight) {
-      if (!activity.title.toLowerCase().includes('respiración')) {
-        Alert.alert(
-          "Semáforo de Energía 🚦",
-          "Has llegado al final del día. Tu mente necesita detenerse y desconectar.\n\nPor tu bienestar clínico, todas las actividades intensas han sido bloqueadas. Solo tienes acceso a la Respiración Guiada."
-        );
-        return;
-      }
+    // Módulo 6: Semáforo de Energía (Balance late-night block)
+    if (currentPlan === 'balance' && isLateNight && activity.id !== '1') {
+      Alert.alert(
+        "Semáforo de Energía 🚦",
+        "Has llegado al final del día. Tu mente necesita detenerse y desconectar.\n\nPor tu bienestar clínico, todas las actividades intensas han sido bloqueadas. Solo tienes acceso a la Respiración Guiada."
+      );
+      return;
     }
-    if (activity.title.toLowerCase().includes('respiración')) {
-      router.push('/actividades/respiracion');
-    } else if (activity.title.toLowerCase().includes('estelar')) {
-      router.push('/actividades/gratitud');
-    } else if (activity.title.toLowerCase().includes('relajación')) {
-      router.push('/actividades/relajacion');
-    } else if (activity.title.toLowerCase().includes('sentidos')) {
-      router.push('/actividades/grounding');
-    } else if (activity.title.toLowerCase().includes('cápsula')) {
-      router.push('/actividades/capsula');
-    } else if (activity.title.toLowerCase().includes('pomodoro')) {
-      router.push('/actividades/pomodoro');
-    } else if (activity.title.toLowerCase().includes('diario ciego')) {
-      if (currentPlan === 'descubrimiento') {
-        router.push('/actividades/diario-ciego');
-      } else {
-        Alert.alert(
-          "Actividad Exclusiva 🔒",
-          "El Diario Ciego es una herramienta clínica diseñada terapéuticamente solo para la Ruta del Descubrimiento.\n\nPuedes cambiar tu ruta actual en la pantalla de Perfil para acceder a ella."
-        );
-      }
-    } else if (activity.title.toLowerCase().includes('astillero')) {
-      if (currentPlan === 'renacer' || currentPlan === 'depresion') {
-        router.push('/actividades/astillero');
-      } else {
-        Alert.alert(
-          "Actividad Exclusiva 🔒",
-          "El Astillero de Victorias es un mini-juego terapéutico para recuperar la motivación, exclusivo de la Ruta Renacer.\n\nPuedes cambiar tu ruta actual en la pantalla de Perfil para acceder a ella."
-        );
-      }
-    } else if (activity.title.toLowerCase().includes('mariposa')) {
-      if (currentPlan === 'autocompasion') {
-        router.push('/actividades/abrazo');
-      } else {
-        Alert.alert(
-          "Actividad Exclusiva 🔒",
-          "El Abrazo de Mariposa es una técnica de regulación háptica exclusiva de la Ruta Autocompasión.\n\nPuedes cambiar tu ruta actual en la pantalla de Perfil para acceder a ella."
-        );
-      }
-    } else if (activity.title.toLowerCase().includes('botella')) {
-      if (currentPlan === 'soledad') {
-        router.push('/actividades/botella');
-      } else {
-        Alert.alert(
-          "Actividad Exclusiva 🔒",
-          "El Mensaje en una Botella es un espacio de conexión anónima, exclusivo de la Ruta Soledad.\n\nPuedes cambiar tu ruta actual en la pantalla de Perfil para acceder a ella."
-        );
-      }
+
+    // Check exclusive activities
+    const exclusive = EXCLUSIVE_ACTIVITIES[activity.id];
+    if (exclusive && !exclusive.plans.includes(currentPlan || '')) {
+      Alert.alert("Actividad Exclusiva 🔒", exclusive.message);
+      return;
     }
-    // Other activities show a placeholder for now
+
+    // Navigate by ID
+    const route = ACTIVITY_ROUTES[activity.id];
+    if (route) {
+      router.push(route as any);
+    }
   };
 
   const sortedActivities = React.useMemo(() => {
@@ -184,7 +152,7 @@ export default function ActividadesScreen() {
 
         {/* Mascot at bottom */}
         <Animated.View entering={FadeInUp.duration(400).delay(500)} style={styles.mascotSection}>
-          <Mascot size={90} variant={(currentPlan === 'balance' && isLateNight) ? "sleeping" : "meditating"} />
+          <Mascot size={120} variant={(currentPlan === 'balance' && isLateNight) ? "sleeping" : "meditating"} />
           <Text style={[styles.mascotText, { color: colors.textLight }]}>
             {(currentPlan === 'balance' && isLateNight) ? "Es hora de soltar el día. Lumi ya está descansando 🌙" : mascotText}
           </Text>

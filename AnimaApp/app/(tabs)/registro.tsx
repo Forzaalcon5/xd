@@ -1,314 +1,512 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Dimensions, Pressable, Modal, TextInput, KeyboardAvoidingView, Platform } from 'react-native';
-import Animated, { FadeInUp, FadeIn } from 'react-native-reanimated';
+/**
+ * RegistroScreen — Rediseñado: de timeline crudo a herramienta de autoconocimiento.
+ *
+ * Secciones:
+ * 1. Header con Lumi "registro" y racha de días
+ * 2. Tarjeta de Insight Emocional inteligente (analiza tendencia)
+ * 3. Gráfico de 7 días con labels de día de la semana
+ * 4. Stats compactos (Registros, Gratitudes, Actividades)
+ * 5. Actividades Recientes (progreso activo)
+ * 6. Timeline mejorada con animaciones staggered
+ * 7. FAB + Modal para registrar ánimo
+ */
+import React, { useState, useMemo, useCallback } from 'react';
+import {
+  View, Text, StyleSheet, ScrollView, Pressable,
+  Modal, TextInput, KeyboardAvoidingView, Platform, Alert,
+} from 'react-native';
+import Animated, { FadeInUp, FadeIn, FadeInRight } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors, Gradients, MoodConfig } from '../../constants/theme';
-import { GlassCard, SectionHeader, Mascot, FloatingParticles, JewelButton } from '../../components/ui';
+import * as Haptics from 'expo-haptics';
+import { Colors, MoodConfig } from '../../constants/theme';
+import {
+  GlassCard, SectionHeader, Mascot, FloatingParticles, JewelButton,
+} from '../../components/ui';
 import { useTheme } from '../../hooks/useTheme';
 import { useStore, MoodType } from '../../store/useStore';
+import { EMOTIONAL_ROUTES } from '../../constants/clinicalContent';
+import { SoundService } from '../../utils/SoundService';
 
-const { width: SCREEN_W } = Dimensions.get('window');
+// ============================================================
+// HELPERS
+// ============================================================
 
-// Mini mood bar chart component
-function MoodMiniChart({ history }: { history: any[] }) {
-  const { colors } = useTheme();
-  const last7 = history.slice(-7);
-  const moodLevels: Record<string, number> = {
-    'animado': 5, 'mejor': 4, 'neutral': 3, 'triste': 2, 'muy_triste': 1,
+/** Calcula la racha real de días consecutivos con registros */
+function getStreak(history: { date: string }[]): number {
+  if (history.length === 0) return 0;
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  // Get unique dates sorted descending
+  const uniqueDays = [...new Set(
+    history.map(e => {
+      const d = new Date(e.date);
+      d.setHours(0, 0, 0, 0);
+      return d.getTime();
+    })
+  )].sort((a, b) => b - a);
+
+  // Check if most recent entry is today or yesterday (otherwise streak is 0)
+  const mostRecent = uniqueDays[0];
+  const diffFromToday = Math.floor((today.getTime() - mostRecent) / 86400000);
+  if (diffFromToday > 1) return 0;
+
+  let streak = 1;
+  for (let i = 1; i < uniqueDays.length; i++) {
+    const diff = Math.floor((uniqueDays[i - 1] - uniqueDays[i]) / 86400000);
+    if (diff === 1) streak++;
+    else break;
+  }
+  return streak;
+}
+
+/** Genera insight emocional basado en datos reales */
+function getEmotionalInsight(
+  moodHistory: { mood: string; date: string }[],
+  recentActivities: any[],
+  currentPlan: string | null,
+): { icon: string; title: string; message: string; color: string } {
+  if (moodHistory.length === 0) {
+    return {
+      icon: 'sparkles',
+      title: '¡Empieza tu viaje!',
+      message: 'Registra cómo te sientes cada día y descubre patrones en tu bienestar emocional. Lumi te acompañará.',
+      color: Colors.primary,
+    };
+  }
+
+  const scores: Record<string, number> = {
+    animado: 5, mejor: 4, neutral: 3, triste: 2, muy_triste: 1,
   };
 
+  // Last 3 entries trend
+  const recent3 = moodHistory.slice(0, 3).map(e => scores[e.mood] || 3);
+  const older3 = moodHistory.slice(3, 6).map(e => scores[e.mood] || 3);
+
+  const recentAvg = recent3.reduce((a, b) => a + b, 0) / recent3.length;
+  const olderAvg = older3.length > 0 ? older3.reduce((a, b) => a + b, 0) / older3.length : recentAvg;
+
+  const routeName = EMOTIONAL_ROUTES.find(r => r.id === currentPlan)?.title || 'tu ruta';
+
+  if (recentAvg > olderAvg + 0.5) {
+    return {
+      icon: 'trending-up',
+      title: '¡Tu ánimo mejora! 🌱',
+      message: `Tus últimos registros muestran una tendencia positiva. ${routeName} está funcionando para ti.`,
+      color: '#4ADE80',
+    };
+  }
+
+  if (recentAvg < olderAvg - 0.5) {
+    return {
+      icon: 'heart',
+      title: 'Has tenido días difíciles 💙',
+      message: 'Recuerda que registrar cómo te sientes es parte del proceso. Estamos contigo, cada paso cuenta.',
+      color: '#60A5FA',
+    };
+  }
+
+  if (recentAvg >= 3.5) {
+    return {
+      icon: 'sunny',
+      title: '¡Vas muy bien! ☀️',
+      message: `Tu ánimo se mantiene positivo. La consistencia en ${routeName} marca la diferencia.`,
+      color: '#FBBF24',
+    };
+  }
+
+  if (moodHistory.length >= 5) {
+    return {
+      icon: 'shield-checkmark',
+      title: 'Tu constancia es tu superpoder',
+      message: `Llevas ${moodHistory.length} registros. Conocerte mejor es el primer paso para sentirte mejor.`,
+      color: '#A78BFA',
+    };
+  }
+
+  return {
+    icon: 'leaf',
+    title: 'Cada registro cuenta 🍃',
+    message: 'Cuanto más registres, mejores patrones descubrirás. Sigue así.',
+    color: Colors.mint,
+  };
+}
+
+// ============================================================
+// SUB-COMPONENTS
+// ============================================================
+
+/** Gráfico de barras mejorado con labels de día de la semana */
+function MoodWeekChart({ data, history }: { data: number[]; history: any[] }) {
+  const { colors, isDark } = useTheme();
+  const dayLabels = ['L', 'M', 'X', 'J', 'V', 'S', 'D'];
+  const today = new Date().getDay(); // 0=Sun, 1=Mon...
+  // Reorder so today is last
+  const orderedLabels = [...dayLabels.slice(today === 0 ? 1 : today), ...dayLabels.slice(0, today === 0 ? 1 : today)];
+
+  const maxVal = Math.max(...data, 1);
+
   return (
-    <View style={styles.chartContainer}>
-      {last7.map((entry, i) => {
-        const config = MoodConfig[entry.mood as MoodType];
-        const level = moodLevels[entry.mood] || 3;
-        const height = (level / 5) * 48;
+    <View style={chartStyles.container}>
+      {data.map((val, i) => {
+        const height = Math.max(8, (val / maxVal) * 52);
+        const isToday = i === data.length - 1;
+        const moodKey = val >= 4 ? 'mejor' : val >= 3 ? 'neutral' : val >= 2 ? 'triste' : null;
+        const barColor = moodKey ? (MoodConfig[moodKey as MoodType]?.color || colors.primary) : (isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.06)');
+
         return (
-          <View key={entry.id} style={styles.chartBarWrap}>
-            <View style={[styles.chartBar, { height, backgroundColor: config?.color || '#B8C4D0' }]}>
-              <View style={[styles.chartBarGlow, { backgroundColor: config?.color + '30' }]} />
+          <View key={i} style={chartStyles.barWrap}>
+            <View style={[
+              chartStyles.bar,
+              { height, backgroundColor: barColor },
+              isToday && { borderWidth: 2, borderColor: colors.primary + '40' },
+            ]}>
+              {val > 0 && <View style={[chartStyles.barGlow, { backgroundColor: barColor + '30' }]} />}
             </View>
-            <Text style={[styles.chartBarLabel, { color: colors.textLight }]}>
-              {entry.date?.split('/')[0] || ''}
+            <Text style={[
+              chartStyles.label,
+              { color: isToday ? colors.primary : colors.textLight },
+              isToday && { fontWeight: '700' },
+            ]}>
+              {orderedLabels[i]}
             </Text>
           </View>
         );
       })}
-
-      {/* Fill remaining slots if less than 7 */}
-      {Array.from({ length: Math.max(0, 7 - last7.length) }).map((_, i) => (
-        <View key={`empty-${i}`} style={styles.chartBarWrap}>
-          <View style={[styles.chartBar, { height: 8, backgroundColor: 'rgba(0,0,0,0.04)' }]} />
-          <Text style={[styles.chartBarLabel, { color: colors.textLight }]}>—</Text>
-        </View>
-      ))}
     </View>
   );
 }
 
-// Streak calculator
-function getStreak(history: any[]): number {
-  if (history.length === 0) return 0;
-  // Count consecutive days with entries (simplified)
-  return Math.min(history.length, 30);
-}
+const chartStyles = StyleSheet.create({
+  container: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', height: 68, paddingHorizontal: 4 },
+  barWrap: { alignItems: 'center', flex: 1, gap: 6 },
+  bar: { width: 22, borderRadius: 8, minHeight: 6, overflow: 'hidden' },
+  barGlow: { position: 'absolute', top: 0, left: 0, right: 0, height: '50%', borderRadius: 8 },
+  label: { fontSize: 10, fontFamily: 'Poppins_600SemiBold' },
+});
 
+// ============================================================
+// MAIN SCREEN
+// ============================================================
 export default function RegistroScreen() {
   const { colors, isDark } = useTheme();
-  const moodHistory = useStore((s) => s.moodHistory);
-  const journalEntries = useStore((s) => s.journalEntries) ?? [];
-  const recentActivities = useStore((s) => s.recentActivities);
-  const setMood = useStore((s) => s.setMood);
-  const saveMoodEntry = useStore((s) => s.saveMoodEntry);
-  const streak = getStreak(moodHistory);
+  const moodHistory = useStore(s => s.moodHistory);
+  const journalEntries = useStore(s => s.journalEntries) ?? [];
+  const recentActivities = useStore(s => s.recentActivities);
+  const weeklyMoodData = useStore(s => s.weeklyMoodData);
+  const currentPlan = useStore(s => s.currentPlan);
+  const setMood = useStore(s => s.setMood);
+  const saveMoodEntry = useStore(s => s.saveMoodEntry);
+  const removeMoodEntry = useStore(s => s.removeMoodEntry);
+
+  const streak = useMemo(() => getStreak(moodHistory), [moodHistory]);
+  const insight = useMemo(() => getEmotionalInsight(moodHistory, recentActivities, currentPlan), [moodHistory, recentActivities, currentPlan]);
   const isEmpty = moodHistory.length === 0 && journalEntries.length === 0;
 
   const [showLogModal, setShowLogModal] = useState(false);
   const [selectedMood, setSelectedMood] = useState<MoodType | null>(null);
   const [journalNote, setJournalNote] = useState('');
 
-  const handleSaveLog = () => {
+  // Most frequent mood
+  const dominantMood = useMemo(() => {
+    if (moodHistory.length === 0) return null;
+    const counts: Record<string, number> = {};
+    moodHistory.forEach(e => { counts[e.mood] = (counts[e.mood] || 0) + 1; });
+    const top = Object.entries(counts).sort((a, b) => b[1] - a[1])[0];
+    return top ? top[0] as MoodType : null;
+  }, [moodHistory]);
+
+  const handleSaveLog = useCallback(() => {
     if (selectedMood) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      SoundService.play('click');
       setMood(selectedMood);
       saveMoodEntry(journalNote.trim() || undefined);
       setShowLogModal(false);
       setJournalNote('');
       setSelectedMood(null);
     }
-  };
-
-  // Get most frequent mood
-  const getMostFrequentMood = () => {
-    if (moodHistory.length === 0) return null;
-    const counts: Record<string, number> = {};
-    moodHistory.forEach(e => { counts[e.mood] = (counts[e.mood] || 0) + 1; });
-    const topMood = Object.entries(counts).sort((a, b) => b[1] - a[1])[0];
-    return topMood ? topMood[0] as MoodType : null;
-  };
-  const dominantMood = getMostFrequentMood();
+  }, [selectedMood, journalNote]);
 
   return (
     <View style={styles.container}>
-      <FloatingParticles count={12} persistenceKey="journal_stars_pos_v2" />
+      <FloatingParticles count={10} persistenceKey="registro_stars_v3" />
 
-      <ScrollView
-        style={styles.scroll}
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* Header */}
-        <Animated.View entering={FadeInUp.duration(400)} style={styles.headerRow}>
-          <View>
-            <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>Mi Registro</Text>
-            <Text style={[styles.headerSubtitle, { color: colors.textLight }]}>Tu viaje emocional</Text>
+      <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        {/* ─── 1. HEADER + LUMI ─── */}
+        <Animated.View entering={FadeInUp.duration(500)} style={styles.headerSection}>
+          <View style={styles.headerTextCol}>
+            <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>Mi Viaje</Text>
+            <Text style={[styles.headerSubtitle, { color: colors.textLight }]}>
+              {moodHistory.length > 0
+                ? `${moodHistory.length} registro${moodHistory.length !== 1 ? 's' : ''} de tu camino emocional`
+                : 'Tu espacio de autoconocimiento'
+              }
+            </Text>
+            {streak > 0 && (
+              <View style={styles.streakBadge}>
+                <Ionicons name="flame" size={14} color="#F97316" />
+                <Text style={styles.streakText}>{streak} día{streak !== 1 ? 's' : ''} seguido{streak !== 1 ? 's' : ''}</Text>
+              </View>
+            )}
           </View>
-          {streak > 0 && (
-            <View style={styles.streakBadge}>
-              <Ionicons name="flame" size={16} color="#F97316" />
-              <Text style={styles.streakText}>{streak}</Text>
+          <Mascot size={90} variant={'registro' as any} style={{ marginRight: -8 }} />
+        </Animated.View>
+
+        {/* ─── 2. INSIGHT EMOCIONAL ─── */}
+        <Animated.View entering={FadeInUp.duration(500).delay(100)}>
+          <GlassCard style={{ ...styles.insightCard, borderLeftColor: insight.color, borderLeftWidth: 3 }}>
+            <View style={styles.insightRow}>
+              <View style={[styles.insightIconWrap, { backgroundColor: insight.color + '15' }]}>
+                <Ionicons name={insight.icon as any} size={22} color={insight.color} />
+              </View>
+              <View style={styles.insightContent}>
+                <Text style={[styles.insightTitle, { color: colors.textPrimary }]}>{insight.title}</Text>
+                <Text style={[styles.insightMessage, { color: colors.textSecondary }]}>{insight.message}</Text>
+              </View>
             </View>
-          )}
+          </GlassCard>
         </Animated.View>
 
-        {/* Summary Stats Row */}
-        <Animated.View entering={FadeInUp.duration(400).delay(100)} style={styles.statsRow}>
-          <View style={styles.statCard}>
-            <LinearGradient
-              colors={[Colors.primary + '15', Colors.primary + '05']}
-              style={styles.statGradient}
-            >
-              <View style={[styles.statIconWrap, { backgroundColor: Colors.primary + '18' }]}>
-                <Ionicons name="heart" size={18} color={colors.primary} />
-              </View>
-              <Text style={[styles.statNumber, { color: colors.textPrimary }]}>{moodHistory.length}</Text>
-              <Text style={[styles.statLabel, { color: colors.textLight }]}>Estados</Text>
-            </LinearGradient>
-          </View>
-
-          <View style={styles.statCard}>
-            <LinearGradient
-              colors={['rgba(252,211,77,0.15)', 'rgba(252,211,77,0.03)']}
-              style={styles.statGradient}
-            >
-              <View style={[styles.statIconWrap, { backgroundColor: 'rgba(252,211,77,0.18)' }]}>
-                <Ionicons name="star" size={18} color="#FCD34D" />
-              </View>
-              <Text style={[styles.statNumber, { color: colors.textPrimary }]}>{journalEntries.length}</Text>
-              <Text style={[styles.statLabel, { color: colors.textLight }]}>Gratitudes</Text>
-            </LinearGradient>
-          </View>
-
-          <View style={styles.statCard}>
-            <LinearGradient
-              colors={[Colors.mint + '20', Colors.mint + '05']}
-              style={styles.statGradient}
-            >
-              <View style={[styles.statIconWrap, { backgroundColor: colors.mint + '20' }]}>
-                <Ionicons name="sparkles" size={18} color={colors.mint} />
-              </View>
-              <Text style={[styles.statNumber, { color: colors.textPrimary }]}>{recentActivities.length}</Text>
-              <Text style={[styles.statLabel, { color: colors.textLight }]}>Actividades</Text>
-            </LinearGradient>
-          </View>
-        </Animated.View>
-
-        {/* Mood Chart — only when there's data */}
+        {/* ─── 3. GRÁFICO SEMANAL ─── */}
         {moodHistory.length > 0 && (
-          <Animated.View entering={FadeInUp.duration(400).delay(200)}>
+          <Animated.View entering={FadeInUp.duration(500).delay(200)}>
             <GlassCard style={styles.chartCard}>
               <View style={styles.chartHeader}>
-                <Text style={[styles.chartTitle, { color: colors.textPrimary }]}>Últimos 7 registros</Text>
+                <Text style={[styles.chartTitle, { color: colors.textPrimary }]}>Esta semana</Text>
                 {dominantMood && (
-                  <View style={styles.dominantBadge}>
+                  <View style={[styles.dominantBadge, { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.03)' }]}>
                     <Ionicons
                       name={MoodConfig[dominantMood]?.icon as any || 'ellipse'}
-                      size={14}
+                      size={13}
                       color={MoodConfig[dominantMood]?.color}
                     />
-                    <Text style={[styles.dominantText, { color: MoodConfig[dominantMood]?.color }]}>
+                    <Text style={{ fontSize: 11, fontWeight: '600', color: MoodConfig[dominantMood]?.color, fontFamily: 'Poppins_600SemiBold' }}>
                       {MoodConfig[dominantMood]?.label}
                     </Text>
                   </View>
                 )}
               </View>
-              <MoodMiniChart history={moodHistory} />
+              <MoodWeekChart data={weeklyMoodData} history={moodHistory} />
             </GlassCard>
           </Animated.View>
         )}
 
-        {/* Timeline Header */}
-        <Animated.View entering={FadeInUp.duration(400).delay(300)}>
-          <SectionHeader title="Línea de tiempo" subtitle="Tus registros más recientes" />
+        {/* ─── 4. STATS ROW ─── */}
+        <Animated.View entering={FadeInUp.duration(500).delay(300)} style={styles.statsRow}>
+          {[
+            { n: moodHistory.length, label: 'Registros', icon: 'heart', color: colors.primary, bg: Colors.primary },
+            { n: journalEntries.length, label: 'Estrellas', icon: 'star', color: '#FCD34D', bg: '#FCD34D' },
+            { n: recentActivities.length, label: 'Actividades', icon: 'sparkles', color: colors.mint, bg: Colors.mint },
+          ].map((s, i) => (
+            <View key={i} style={styles.statCard}>
+              <LinearGradient colors={[s.bg + '15', s.bg + '05']} style={styles.statGradient}>
+                <View style={[styles.statIconWrap, { backgroundColor: s.bg + '18' }]}>
+                  <Ionicons name={s.icon as any} size={16} color={s.color} />
+                </View>
+                <Text style={[styles.statNumber, { color: colors.textPrimary }]}>{s.n}</Text>
+                <Text style={[styles.statLabel, { color: colors.textLight }]}>{s.label}</Text>
+              </LinearGradient>
+            </View>
+          ))}
         </Animated.View>
 
-        {/* Timeline or Empty State */}
-        {!isEmpty ? (
-          <Animated.View entering={FadeInUp.duration(400).delay(400)}>
-            {moodHistory.slice(0, 15).map((entry, i) => {
-              const config = MoodConfig[entry.mood as MoodType];
-              const isLast = i === Math.min(moodHistory.length, 15) - 1;
-              return (
-                <View key={entry.id} style={styles.timelineItem}>
-                  {/* Timeline spine */}
-                  <View style={styles.timelineSpine}>
-                    <View style={styles.timelineDot}>
-                      <View style={[styles.timelineDotInner, { backgroundColor: config?.color || '#B8C4D0' }]} />
-                    </View>
-                    {!isLast && <View style={styles.timelineConnector} />}
+        {/* ─── 5. ACTIVIDADES RECIENTES ─── */}
+        {recentActivities.length > 0 && (
+          <Animated.View entering={FadeInUp.duration(500).delay(350)}>
+            <SectionHeader title="Tu progreso" subtitle="Actividades completadas recientemente" />
+            {recentActivities.slice(0, 4).map((act, i) => (
+              <Animated.View key={`act-${i}`} entering={FadeInRight.duration(400).delay(i * 80)}>
+                <GlassCard style={styles.activityItem}>
+                  <View style={[styles.activityIconWrap, { backgroundColor: (act.color || Colors.mint) + '15' }]}>
+                    <Ionicons name={(act.icon || 'checkmark-circle-outline') as any} size={18} color={act.color || Colors.mint} />
                   </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.activityTitle, { color: colors.textPrimary }]}>{act.title}</Text>
+                    <Text style={[styles.activityTime, { color: colors.textLight }]}>{act.time}</Text>
+                  </View>
+                  <View style={[styles.activityDonePill, { backgroundColor: (act.color || Colors.mint) + '12' }]}>
+                    <Ionicons name="checkmark" size={12} color={act.color || Colors.mint} />
+                    <Text style={{ fontSize: 10, color: act.color || Colors.mint, fontWeight: '600' }}>{act.detail}</Text>
+                  </View>
+                </GlassCard>
+              </Animated.View>
+            ))}
+          </Animated.View>
+        )}
 
-                  {/* Card */}
-                  <GlassCard style={styles.timelineCard}>
-                    <View style={styles.timelineRow}>
-                      <View style={[styles.timelineMoodIcon, { backgroundColor: (config?.color || '#B8C4D0') + '15' }]}>
-                        <Ionicons
-                          name={(config?.icon || 'ellipse') as any}
-                          size={18}
-                          color={config?.color || Colors.textLight}
-                        />
+        {/* ─── 6. TIMELINE ─── */}
+        <Animated.View entering={FadeInUp.duration(500).delay(400)}>
+          <SectionHeader
+            title="Tu línea de tiempo"
+            subtitle={moodHistory.length > 0 ? `Últimos ${Math.min(moodHistory.length, 10)} registros` : undefined}
+          />
+        </Animated.View>
+
+        {!isEmpty ? (
+          <View>
+            {moodHistory.slice(0, 10).map((entry, i) => {
+              const config = MoodConfig[entry.mood as MoodType];
+              const isLast = i === Math.min(moodHistory.length, 10) - 1;
+
+              return (
+                <Animated.View key={entry.id} entering={FadeInUp.duration(400).delay(450 + i * 60)}>
+                  <View style={styles.timelineItem}>
+                    {/* Spine */}
+                    <View style={styles.timelineSpine}>
+                      <View style={[styles.timelineDot, { borderColor: config?.color || '#B8C4D0' }]}>
+                        <Ionicons name={(config?.icon || 'ellipse') as any} size={12} color={config?.color || '#B8C4D0'} />
                       </View>
-                      <View style={{ flex: 1, gap: 2 }}>
-                        <Text style={[styles.timelineLabel, { color: colors.textPrimary }]}>{entry.label}</Text>
-                        <Text style={[styles.timelineDate, { color: colors.textLight }]}>{new Date(entry.date).toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' })}</Text>
-                        {!!entry.note && (
-                          <Text style={[styles.timelineNote, { color: colors.textSecondary }]}>{entry.note}</Text>
-                        )}
-                      </View>
-                      <View style={[styles.timelineMoodTag, { backgroundColor: (config?.color || '#B8C4D0') + '12' }]}>
-                        <Text style={[styles.timelineMoodTagText, { color: config?.color }]}>
-                          {config?.label}
-                        </Text>
-                      </View>
+                      {!isLast && <View style={[styles.timelineConnector, { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)' }]} />}
                     </View>
-                  </GlassCard>
-                </View>
+
+                    {/* Card — long press to delete */}
+                    <Pressable
+                      style={{ flex: 1, marginLeft: 8, marginBottom: 8 }}
+                      onLongPress={() => {
+                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                        Alert.alert(
+                          'Eliminar registro',
+                          `¿Quieres eliminar este registro de "${config?.label}"?`,
+                          [
+                            { text: 'Cancelar', style: 'cancel' },
+                            { text: 'Eliminar', style: 'destructive', onPress: () => removeMoodEntry(entry.id) },
+                          ]
+                        );
+                      }}
+                      delayLongPress={500}
+                    >
+                    <GlassCard>
+                      <View style={styles.timelineRow}>
+                        <View style={{ flex: 1, gap: 2 }}>
+                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                            <Text style={[styles.timelineLabel, { color: colors.textPrimary }]}>{entry.label}</Text>
+                            <View style={[styles.moodPill, { backgroundColor: (config?.color || '#B8C4D0') + '12' }]}>
+                              <Text style={[styles.moodPillText, { color: config?.color }]}>{config?.label}</Text>
+                            </View>
+                          </View>
+                          <Text style={[styles.timelineDate, { color: colors.textLight }]}>
+                            {new Date(entry.date).toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'short' })}
+                          </Text>
+                          {!!entry.note && (
+                            <View style={[styles.noteBox, { backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)' }]}>
+                              <Ionicons name="chatbubble-outline" size={12} color={colors.textLight} />
+                              <Text style={[styles.timelineNote, { color: colors.textSecondary }]}>{entry.note}</Text>
+                            </View>
+                          )}
+                        </View>
+                      </View>
+                    </GlassCard>
+                    </Pressable>
+                  </View>
+                </Animated.View>
               );
             })}
-          </Animated.View>
+          </View>
         ) : (
           <Animated.View entering={FadeIn.duration(600).delay(400)}>
             <GlassCard style={styles.emptyCard}>
-              <Mascot size={100} variant="diary" />
-              <Text style={[styles.emptyTitle, { color: colors.textPrimary }]}>¡Comienza tu viaje!</Text>
+              <Mascot size={110} variant={'registro' as any} />
+              <Text style={[styles.emptyTitle, { color: colors.textPrimary }]}>Tu historia empieza aquí</Text>
               <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
-                Registra cómo te sientes cada día y descubre patrones en tu bienestar emocional.
+                Cada registro es un paso hacia conocerte mejor. Lumi te acompañará en el camino.
               </Text>
               <View style={styles.emptySteps}>
                 {[
-                  { icon: 'heart-outline', text: 'Registra tu ánimo' },
-                  { icon: 'star-outline', text: 'Escribe gratitudes' },
-                  { icon: 'trending-up-outline', text: 'Observa tu progreso' },
+                  { icon: 'add-circle-outline', text: 'Toca el botón + para registrar tu ánimo', color: Colors.primary },
+                  { icon: 'bar-chart-outline', text: 'Descubre patrones en tu bienestar', color: '#FBBF24' },
+                  { icon: 'analytics-outline', text: 'Recibe insights personalizados', color: '#4ADE80' },
                 ].map((step, i) => (
-                  <View key={i} style={styles.emptyStep}>
-                    <View style={[styles.emptyStepNum, { backgroundColor: colors.primary + '15' }]}>
-                      <Text style={[styles.emptyStepNumText, { color: colors.primary }]}>{i + 1}</Text>
+                  <Animated.View key={i} entering={FadeInRight.duration(400).delay(600 + i * 120)}>
+                    <View style={[styles.emptyStep, { backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : step.color + '08' }]}>
+                      <View style={[styles.emptyStepIcon, { backgroundColor: step.color + '15' }]}>
+                        <Ionicons name={step.icon as any} size={18} color={step.color} />
+                      </View>
+                      <Text style={[styles.emptyStepText, { color: colors.textSecondary }]}>{step.text}</Text>
                     </View>
-                    <Ionicons name={step.icon as any} size={16} color={colors.primary} />
-                    <Text style={[styles.emptyStepText, { color: colors.textSecondary }]}>{step.text}</Text>
-                  </View>
+                  </Animated.View>
                 ))}
               </View>
             </GlassCard>
           </Animated.View>
         )}
 
-        <View style={{ height: 100 }} />
+        <View style={{ height: 120 }} />
       </ScrollView>
 
-      {/* Floating Action Button */}
+      {/* ─── FAB ─── */}
       <Animated.View entering={FadeInUp.duration(400).delay(500)} style={styles.fabContainer}>
-        <Pressable 
-          style={({ pressed }) => [styles.fab, pressed && { opacity: 0.8, transform: [{ scale: 0.95 }] }]}
-          onPress={() => setShowLogModal(true)}
+        <Pressable
+          style={({ pressed }) => [styles.fab, pressed && { opacity: 0.85, transform: [{ scale: 0.93 }] }]}
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+            SoundService.play('click');
+            setShowLogModal(true);
+          }}
         >
           <LinearGradient colors={[Colors.primary, Colors.secondary]} style={styles.fabGradient}>
-            <Ionicons name="add" size={32} color="#FFF" />
+            <Ionicons name="add" size={28} color="#FFF" />
           </LinearGradient>
         </Pressable>
       </Animated.View>
 
-      {/* Log Your Day Modal */}
+      {/* ─── LOG MODAL ─── */}
       <Modal visible={showLogModal} transparent animationType="slide" onRequestClose={() => setShowLogModal(false)}>
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.modalOverlay}>
-          <View style={[styles.modalContent, { backgroundColor: colors.bgCard }]}>
+          <View style={[styles.modalContent, { backgroundColor: isDark ? colors.bgCard : '#FFFFFF' }]}>
+            {/* Handle bar */}
+            <View style={[styles.modalHandle, { backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)' }]} />
+
             <View style={styles.modalHeader}>
-              <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>¿Cómo te sientes hoy?</Text>
-              <Pressable onPress={() => setShowLogModal(false)}>
-                <Ionicons name="close" size={24} color={colors.textLight} />
+              <View>
+                <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>¿Cómo te sientes?</Text>
+                <Text style={[styles.modalSubtitle, { color: colors.textLight }]}>Tómate un momento para reflexionar</Text>
+              </View>
+              <Pressable onPress={() => setShowLogModal(false)} hitSlop={12}>
+                <Ionicons name="close-circle" size={28} color={colors.textLight} />
               </Pressable>
             </View>
 
-            {/* Mood Selector Grid */}
+            {/* Mood Options */}
             <View style={styles.moodGrid}>
               {(Object.keys(MoodConfig) as MoodType[]).map((moodKey) => {
                 const isSelected = selectedMood === moodKey;
                 const config = MoodConfig[moodKey];
                 return (
-                  <Pressable 
-                    key={moodKey} 
-                    style={[styles.moodBox, isSelected && { backgroundColor: config.color + '20', borderColor: config.color }]}
-                    onPress={() => setSelectedMood(moodKey)}
+                  <Pressable
+                    key={moodKey}
+                    style={[
+                      styles.moodBox,
+                      { backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)' },
+                      isSelected && { backgroundColor: config.color + '15', borderColor: config.color, borderWidth: 2 },
+                    ]}
+                    onPress={() => {
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                      setSelectedMood(moodKey);
+                    }}
                   >
-                    <Ionicons name={(config.icon || 'ellipse') as any} size={28} color={config.color} />
-                    <Text style={[styles.moodLabel, { color: colors.textSecondary }, isSelected && { color: config.color, fontWeight: '600' }]}>{config.label}</Text>
+                    <Ionicons name={(config.icon || 'ellipse') as any} size={28} color={isSelected ? config.color : colors.textLight} />
+                    <Text style={[
+                      styles.moodLabel,
+                      { color: isSelected ? config.color : colors.textSecondary },
+                      isSelected && { fontWeight: '700' },
+                    ]}>{config.label}</Text>
                   </Pressable>
                 );
               })}
             </View>
 
-            {/* Note Input */}
+            {/* Note */}
             <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>Reflexión del día (opcional)</Text>
             <TextInput
-              style={[
-                styles.input, 
-                { 
-                  backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#F7FAFC',
-                  color: colors.textPrimary,
-                  borderColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'
-                }
-              ]}
-              placeholder="¿Qué hizo que te sintieras así hoy?"
+              style={[styles.input, {
+                backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : '#F7FAFC',
+                color: colors.textPrimary,
+                borderColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)',
+              }]}
+              placeholder="¿Qué hizo que te sintieras así?"
               placeholderTextColor={colors.textLight}
               multiline
               numberOfLines={3}
@@ -317,215 +515,111 @@ export default function RegistroScreen() {
               onChangeText={setJournalNote}
             />
 
-            <JewelButton 
-              title="Guardar Registro" 
-              onPress={handleSaveLog} 
-              style={{ marginTop: 24, opacity: selectedMood ? 1 : 0.5 }}
+            <JewelButton
+              title="Guardar Registro"
+              icon="checkmark-circle-outline"
+              onPress={handleSaveLog}
+              style={{ marginTop: 20, opacity: selectedMood ? 1 : 0.5 }}
               disabled={!selectedMood}
             />
           </View>
         </KeyboardAvoidingView>
       </Modal>
-
     </View>
   );
 }
 
+// ============================================================
+// STYLES
+// ============================================================
 const styles = StyleSheet.create({
   container: { flex: 1 },
   scroll: { flex: 1 },
   scrollContent: { paddingHorizontal: 20, paddingTop: 60 },
 
   // Header
-  headerRow: {
-    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    marginBottom: 20,
-  },
-  headerTitle: {
-    fontSize: 26, fontWeight: '700', color: Colors.textPrimary,
-    fontFamily: 'Poppins_700Bold', letterSpacing: -0.5,
-  },
-  headerSubtitle: {
-    fontSize: 13, color: Colors.textLight, marginTop: 2,
-    fontFamily: 'Poppins_400Regular',
-  },
+  headerSection: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 },
+  headerTextCol: { flex: 1, gap: 2 },
+  headerTitle: { fontSize: 28, fontWeight: '700', fontFamily: 'Poppins_700Bold', letterSpacing: -0.5 },
+  headerSubtitle: { fontSize: 13, fontFamily: 'Poppins_400Regular', marginTop: 2 },
   streakBadge: {
-    flexDirection: 'row', alignItems: 'center', gap: 4,
+    flexDirection: 'row', alignItems: 'center', gap: 5,
     backgroundColor: 'rgba(249,115,22,0.1)',
-    paddingHorizontal: 12, paddingVertical: 6,
-    borderRadius: 20,
+    paddingHorizontal: 10, paddingVertical: 5, borderRadius: 16,
+    alignSelf: 'flex-start', marginTop: 6,
   },
-  streakText: {
-    fontSize: 14, fontWeight: '700', color: '#F97316',
-    fontFamily: 'Poppins_700Bold',
-  },
+  streakText: { fontSize: 12, fontWeight: '700', color: '#F97316', fontFamily: 'Poppins_700Bold' },
+
+  // Insight
+  insightCard: { marginBottom: 16, paddingVertical: 14 },
+  insightRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
+  insightIconWrap: { width: 42, height: 42, borderRadius: 14, justifyContent: 'center', alignItems: 'center' },
+  insightContent: { flex: 1, gap: 4 },
+  insightTitle: { fontSize: 15, fontWeight: '700', fontFamily: 'Poppins_700Bold' },
+  insightMessage: { fontSize: 13, lineHeight: 19, fontFamily: 'Poppins_400Regular' },
+  
+  // Chart
+  chartCard: { marginBottom: 16, paddingVertical: 16 },
+  chartHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14, paddingHorizontal: 4 },
+  chartTitle: { fontSize: 14, fontWeight: '600', fontFamily: 'Poppins_600SemiBold' },
+  dominantBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12 },
 
   // Stats
   statsRow: { flexDirection: 'row', gap: 10, marginBottom: 20 },
-  statCard: {
-    flex: 1, borderRadius: 20, overflow: 'hidden',
-  },
-  statGradient: {
-    alignItems: 'center', gap: 6, paddingVertical: 16, paddingHorizontal: 8,
-    borderRadius: 20, borderWidth: 1, borderColor: 'rgba(255,255,255,0.5)',
-  },
-  statIconWrap: {
-    width: 36, height: 36, borderRadius: 12,
-    justifyContent: 'center', alignItems: 'center',
-  },
-  statNumber: {
-    fontSize: 22, fontWeight: '700', color: Colors.textPrimary,
-    fontFamily: 'Poppins_700Bold',
-  },
-  statLabel: { fontSize: 10, color: Colors.textLight, fontFamily: 'Poppins_500Medium' },
+  statCard: { flex: 1, borderRadius: 20, overflow: 'hidden' },
+  statGradient: { alignItems: 'center', gap: 4, paddingVertical: 14, paddingHorizontal: 6, borderRadius: 20, borderWidth: 1, borderColor: 'rgba(255,255,255,0.5)' },
+  statIconWrap: { width: 32, height: 32, borderRadius: 10, justifyContent: 'center', alignItems: 'center' },
+  statNumber: { fontSize: 20, fontWeight: '700', fontFamily: 'Poppins_700Bold' },
+  statLabel: { fontSize: 10, fontFamily: 'Poppins_500Medium' },
 
-  // Chart
-  chartCard: { marginBottom: 20, paddingVertical: 16 },
-  chartHeader: {
-    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    marginBottom: 16, paddingHorizontal: 4,
-  },
-  chartTitle: {
-    fontSize: 14, fontWeight: '600', color: Colors.textPrimary,
-    fontFamily: 'Poppins_600SemiBold',
-  },
-  dominantBadge: {
-    flexDirection: 'row', alignItems: 'center', gap: 4,
-    paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12,
-    backgroundColor: 'rgba(255,255,255,0.6)',
-  },
-  dominantText: {
-    fontSize: 11, fontWeight: '600', fontFamily: 'Poppins_600SemiBold',
-  },
-  chartContainer: {
-    flexDirection: 'row', alignItems: 'flex-end',
-    justifyContent: 'space-between', height: 60, paddingHorizontal: 4,
-  },
-  chartBarWrap: { alignItems: 'center', flex: 1, gap: 4 },
-  chartBar: {
-    width: 20, borderRadius: 6, minHeight: 6,
-    overflow: 'hidden',
-  },
-  chartBarGlow: {
-    position: 'absolute', top: 0, left: 0, right: 0, height: '50%',
-    borderRadius: 6,
-  },
-  chartBarLabel: { fontSize: 9, color: Colors.textLight },
+  // Activity items
+  activityItem: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 8, paddingVertical: 10 },
+  activityIconWrap: { width: 38, height: 38, borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
+  activityTitle: { fontSize: 14, fontWeight: '600', fontFamily: 'Poppins_600SemiBold' },
+  activityTime: { fontSize: 11, fontFamily: 'Poppins_400Regular' },
+  activityDonePill: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 10 },
 
   // Timeline
   timelineItem: { flexDirection: 'row', marginBottom: 0 },
-  timelineSpine: { width: 28, alignItems: 'center', paddingTop: 16 },
-  timelineDot: {
-    width: 12, height: 12, borderRadius: 6, zIndex: 1,
-    justifyContent: 'center', alignItems: 'center',
-  },
-  timelineDotInner: {
-    width: 5, height: 5, borderRadius: 3,
-    opacity: 0.5,
-  },
-  timelineConnector: {
-    width: 2, flex: 1, backgroundColor: 'rgba(0,0,0,0.05)', marginTop: -1,
-  },
+  timelineSpine: { width: 32, alignItems: 'center', paddingTop: 16 },
+  timelineDot: { width: 26, height: 26, borderRadius: 13, borderWidth: 2, justifyContent: 'center', alignItems: 'center', backgroundColor: 'transparent', zIndex: 1 },
+  timelineConnector: { width: 2, flex: 1, marginTop: -2 },
   timelineCard: { flex: 1, marginLeft: 8, marginBottom: 8 },
   timelineRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  timelineMoodIcon: {
-    width: 36, height: 36, borderRadius: 12,
-    justifyContent: 'center', alignItems: 'center',
-  },
-  timelineLabel: {
-    fontSize: 14, fontWeight: '600', color: Colors.textPrimary,
-    fontFamily: 'Poppins_600SemiBold',
-  },
-  timelineDate: { fontSize: 11, color: Colors.textLight },
-  timelineMoodTag: {
-    paddingHorizontal: 10, paddingVertical: 4, borderRadius: 10,
-  },
-  timelineMoodTagText: {
-    fontSize: 10, fontWeight: '600', fontFamily: 'Poppins_600SemiBold',
-  },
+  timelineLabel: { fontSize: 15, fontWeight: '600', fontFamily: 'Poppins_600SemiBold' },
+  timelineDate: { fontSize: 11, fontFamily: 'Poppins_400Regular' },
+  moodPill: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: 8 },
+  moodPillText: { fontSize: 10, fontWeight: '600', fontFamily: 'Poppins_600SemiBold' },
+  noteBox: { flexDirection: 'row', alignItems: 'flex-start', gap: 6, marginTop: 6, padding: 8, borderRadius: 10 },
+  timelineNote: { fontSize: 12, fontStyle: 'italic', lineHeight: 17, fontFamily: 'Poppins_400Regular', flex: 1 },
 
   // Empty state
-  emptyCard: { alignItems: 'center', paddingVertical: 32, gap: 12 },
-  emptyTitle: {
-    fontSize: 20, fontWeight: '700', color: Colors.textPrimary,
-    fontFamily: 'Poppins_700Bold',
-  },
-  emptyText: {
-    fontSize: 14, color: Colors.textSecondary, textAlign: 'center',
-    paddingHorizontal: 16, lineHeight: 22,
-    fontFamily: 'Poppins_400Regular',
-  },
-  emptySteps: {
-    marginTop: 12, gap: 12, width: '100%', paddingHorizontal: 8,
-  },
-  emptyStep: {
-    flexDirection: 'row', alignItems: 'center', gap: 10,
-    backgroundColor: 'rgba(91,155,213,0.05)',
-    paddingVertical: 12, paddingHorizontal: 16, borderRadius: 14,
-  },
-  emptyStepNum: {
-    width: 22, height: 22, borderRadius: 11,
-    backgroundColor: Colors.primary + '15',
-    justifyContent: 'center', alignItems: 'center',
-  },
-  emptyStepNumText: {
-    fontSize: 11, fontWeight: '700', color: Colors.primary,
-    fontFamily: 'Poppins_700Bold',
-  },
-  emptyStepText: {
-    fontSize: 13, color: Colors.textSecondary,
-    fontFamily: 'Poppins_500Medium',
-  },
-  timelineNote: {
-    fontSize: 12, marginTop: 4, fontFamily: 'Poppins_400Regular', fontStyle: 'italic', lineHeight: 18,
-  },
+  emptyCard: { alignItems: 'center', paddingVertical: 28, gap: 10 },
+  emptyTitle: { fontSize: 20, fontWeight: '700', fontFamily: 'Poppins_700Bold', marginTop: 4 },
+  emptyText: { fontSize: 14, textAlign: 'center', paddingHorizontal: 16, lineHeight: 21, fontFamily: 'Poppins_400Regular' },
+  emptySteps: { marginTop: 12, gap: 10, width: '100%', paddingHorizontal: 4 },
+  emptyStep: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12, paddingHorizontal: 14, borderRadius: 16 },
+  emptyStepIcon: { width: 36, height: 36, borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
+  emptyStepText: { fontSize: 13, fontFamily: 'Poppins_500Medium', flex: 1 },
 
   // FAB
   fabContainer: {
     position: 'absolute', bottom: 24, right: 24,
     shadowColor: Colors.primary, shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.3, shadowRadius: 12, elevation: 8,
   },
-  fab: {
-    width: 60, height: 60, borderRadius: 30, overflow: 'hidden',
-  },
-  fabGradient: {
-    flex: 1, justifyContent: 'center', alignItems: 'center',
-  },
+  fab: { width: 56, height: 56, borderRadius: 28, overflow: 'hidden' },
+  fabGradient: { flex: 1, justifyContent: 'center', alignItems: 'center' },
 
   // Modal
-  modalOverlay: {
-    flex: 1, backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'flex-end',
-  },
-  modalContent: {
-    backgroundColor: '#FFF',
-    borderTopLeftRadius: 32, borderTopRightRadius: 32,
-    padding: 24, paddingBottom: 40,
-  },
-  modalHeader: {
-    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20,
-  },
-  modalTitle: {
-    fontSize: 20, fontWeight: '700', fontFamily: 'Poppins_700Bold',
-  },
-  moodGrid: {
-    flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', marginBottom: 24, gap: 10,
-  },
-  moodBox: {
-    width: '30%', aspectRatio: 1, borderRadius: 16,
-    borderWidth: 2, borderColor: 'transparent',
-    justifyContent: 'center', alignItems: 'center', gap: 8,
-    backgroundColor: 'rgba(150,150,150,0.05)',
-  },
-  moodLabel: {
-    fontSize: 12, fontFamily: 'Poppins_500Medium',
-  },
-  inputLabel: {
-    fontSize: 14, fontFamily: 'Poppins_500Medium', marginBottom: 8,
-  },
-  input: {
-    borderRadius: 16, padding: 16, fontSize: 15,
-    borderWidth: 1, minHeight: 100,
-    fontFamily: 'Poppins_400Regular',
-  },
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
+  modalContent: { borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 24, paddingBottom: 40 },
+  modalHandle: { width: 40, height: 4, borderRadius: 2, alignSelf: 'center', marginBottom: 16 },
+  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 },
+  modalTitle: { fontSize: 20, fontWeight: '700', fontFamily: 'Poppins_700Bold' },
+  modalSubtitle: { fontSize: 13, fontFamily: 'Poppins_400Regular', marginTop: 2 },
+  moodGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', marginBottom: 20, gap: 10 },
+  moodBox: { width: '30%', aspectRatio: 1, borderRadius: 16, borderWidth: 1.5, borderColor: 'transparent', justifyContent: 'center', alignItems: 'center', gap: 8 },
+  moodLabel: { fontSize: 12, fontFamily: 'Poppins_500Medium' },
+  inputLabel: { fontSize: 14, fontFamily: 'Poppins_500Medium', marginBottom: 8 },
+  input: { borderRadius: 16, padding: 16, fontSize: 14, borderWidth: 1, minHeight: 90, fontFamily: 'Poppins_400Regular' },
 });

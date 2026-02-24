@@ -1,4 +1,10 @@
-export type EmotionalRouteId = 'renacer' | 'autocompasion' | 'balance' | 'descubrimiento' | 'soledad';
+/**
+ * FIX: Tipo completo con TODOS los IDs de rutas usadas en la app.
+ * Antes faltaban 'ansiedad', 'inseguridad', 'depresion' — usados en
+ * actividades.tsx, AdaptiveSOS.tsx, AuroraBackgroundDark.tsx, chat.tsx, etc.
+ * Sin ellos, los switches que usaban `currentPlan` fallaban silenciosamente.
+ */
+export type EmotionalRouteId = 'renacer' | 'autocompasion' | 'balance' | 'descubrimiento' | 'soledad' | 'ansiedad' | 'inseguridad' | 'depresion';
 
 export interface EmotionalRoute {
   id: EmotionalRouteId;
