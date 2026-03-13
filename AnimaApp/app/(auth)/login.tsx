@@ -15,6 +15,7 @@ import { GlassCard } from '../../components/ui/GlassCard';
 import { AnimatedEntrance } from '../../components/ui/AnimatedEntrance';
 import { ParticlesBackground } from '../../components/ui/ParticlesBackground';
 import { useStore } from '../../store/useStore';
+import { supabase } from '../../lib/supabase';
 
 const { width: SCREEN_W } = Dimensions.get('window');
 
@@ -60,19 +61,62 @@ export default function LoginScreen() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  const handleLogin = () => {
-    if (!email.trim() || !password.trim()) return;
-    setLoading(true);
-    setTimeout(() => {
-      login(email.trim(), email.split('@')[0]);
+  const handleLogin = async () => {
+  if (!email.includes("@") || password.length < 6) {
+    alert("Correo o contraseña inválidos");
+    return;
+  }
+
+  setLoading(true);
+
+  try {
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: email.trim(),
+      password: password.trim(),
+    });
+
+    if (error) {
+      alert(error.message);
       setLoading(false);
-      if (!currentPlan) {
-        router.replace('/(onboarding)/select-plan');
-      } else {
-        router.replace('/(tabs)');
-      }
-    }, 1500);
-  };
+      return;
+    }
+
+    const user = data.user;
+
+    if (!user) {
+      alert("Usuario no encontrado");
+      setLoading(false);
+      return;
+    }
+
+    // obtener nombre desde profiles
+    const { data: profile, error: profileError } = await supabase
+  .from("profiles")
+  .select("name")
+  .eq("id", user.id)
+  .single();
+
+let username = user.email ? user.email.split("@")[0] : "Usuario";
+
+if (profile && profile.name) {
+  username = profile.name;
+}
+
+login(user.email || "", username);
+
+    if (!currentPlan) {
+      router.replace('/(onboarding)/select-plan');
+    } else {
+      router.replace('/(tabs)');
+    }
+
+  } catch (err) {
+    console.log(err);
+    alert("Error al iniciar sesión");
+  }
+
+  setLoading(false);
+};
 
   return (
     <View style={styles.container}>
