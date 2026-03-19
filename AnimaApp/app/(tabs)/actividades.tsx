@@ -10,6 +10,7 @@ import { ActivityCard, SectionHeader, Mascot } from '../../components/ui';
 import { useStore } from '../../store/useStore';
 import { ACTIVITY_ROUTES, EXCLUSIVE_ACTIVITIES } from '../../constants/activities';
 import { Pressable } from 'react-native';
+import { supabase } from '../../lib/supabase'; // ← único import nuevo
 
 export default function ActividadesScreen() {
   const router = useRouter();
@@ -24,14 +25,24 @@ export default function ActividadesScreen() {
     return hour >= 22 || hour < 5;
   }, [mockLateNight]);
 
-  /**
-   * FIX: Routing por ID en vez de string matching del título.
-   * Antes se usaba activity.title.toLowerCase().includes('...') — si alguien
-   * cambiaba un título, la navegación se rompía silenciosamente.
-   * Ahora usamos un mapa id → ruta definido en constants/activities.ts.
-   */
+  // ── única función nueva: registra y navega ────────────────────────────────
+  const logAndNavigate = async (activity: typeof activities[0], route: string) => {
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (user) {
+      await supabase.from('activity_logs').insert({
+        user_id:       user.id,
+        activity_id:   activity.id,
+        activity_name: activity.title,
+        plan:          currentPlan ?? null,
+      });
+    }
+
+    router.push(route as any);
+  };
+
+  // ── igual que antes, solo cambia el router.push por logAndNavigate ────────
   const handleActivityPress = (activity: typeof activities[0]) => {
-    // Módulo 6: Semáforo de Energía (Balance late-night block)
     if (currentPlan === 'balance' && isLateNight && activity.id !== '1') {
       Alert.alert(
         "Semáforo de Energía 🚦",
@@ -40,51 +51,29 @@ export default function ActividadesScreen() {
       return;
     }
 
-    // Check exclusive activities
     const exclusive = EXCLUSIVE_ACTIVITIES[activity.id];
     if (exclusive && !exclusive.plans.includes(currentPlan || '')) {
       Alert.alert("Actividad Exclusiva 🔒", exclusive.message);
       return;
     }
 
-    // Navigate by ID
     const route = ACTIVITY_ROUTES[activity.id];
-    if (route) {
-      router.push(route as any);
-    }
+    if (route) logAndNavigate(activity, route); // ← antes era router.push(route)
   };
 
   const sortedActivities = React.useMemo(() => {
     let topPriorityId = '';
-    
     switch (currentPlan) {
-      case 'ansiedad':
-        topPriorityId = '4'; // Conexión 5 Sentidos
-        break;
-      case 'balance':
-        topPriorityId = '6'; // Pomodoro de Paz
-        break;
-      case 'autocompasion':
-        topPriorityId = '9'; // Abrazo de Mariposa (Exclusive)
-        break;
-      case 'descubrimiento':
-        topPriorityId = '7'; // Diario Ciego (Exclusive)
-        break;
+      case 'ansiedad':       topPriorityId = '4';  break;
+      case 'balance':        topPriorityId = '6';  break;
+      case 'autocompasion':  topPriorityId = '9';  break;
+      case 'descubrimiento': topPriorityId = '7';  break;
       case 'renacer':
-      case 'depresion':
-        topPriorityId = '8'; // Astillero de Victorias (Exclusive)
-        break;
-      case 'soledad':
-        topPriorityId = '10'; // Mensaje en una Botella (Exclusive)
-        break;
-      case 'inseguridad':
-        topPriorityId = '2'; // Diario Estelar
-        break;
-      default:
-        topPriorityId = '1'; // Respiración
-        break;
+      case 'depresion':      topPriorityId = '8';  break;
+      case 'soledad':        topPriorityId = '10'; break;
+      case 'inseguridad':    topPriorityId = '2';  break;
+      default:               topPriorityId = '1';  break;
     }
-
     return [...activities].sort((a, b) => {
       if (a.id === topPriorityId) return -1;
       if (b.id === topPriorityId) return 1;
@@ -94,16 +83,15 @@ export default function ActividadesScreen() {
 
   const mascotText = React.useMemo(() => {
     switch (currentPlan) {
-      case 'ansiedad': return 'Un paso a la vez. Tú tienes el control 🍃';
-      case 'soledad': return 'No estás solo en esto. Hagamos algo juntos 🫂';
+      case 'ansiedad':    return 'Un paso a la vez. Tú tienes el control 🍃';
+      case 'soledad':     return 'No estás solo en esto. Hagamos algo juntos 🫂';
       case 'inseguridad': return 'Cada pequeño logro cuenta. Tú puedes 🌟';
-      default: return 'Elige una actividad y encuentra tu calma interior ✨';
+      default:            return 'Elige una actividad y encuentra tu calma interior ✨';
     }
   }, [currentPlan]);
 
   return (
     <View style={styles.container}>
-
       <ScrollView
         style={styles.scroll}
         contentContainerStyle={styles.scrollContent}
@@ -115,8 +103,8 @@ export default function ActividadesScreen() {
             subtitle="Herramientas para tu bienestar emocional"
           />
           {currentPlan === 'balance' && (
-            <Pressable 
-              onPress={() => useStore.getState().setMockLateNight(!mockLateNight)} 
+            <Pressable
+              onPress={() => useStore.getState().setMockLateNight(!mockLateNight)}
               style={{ padding: 8, backgroundColor: mockLateNight ? colors.primary : 'transparent', borderRadius: 8 }}
             >
               <Ionicons name="time-outline" size={24} color={mockLateNight ? '#FFF' : colors.textSecondary} />
@@ -126,15 +114,14 @@ export default function ActividadesScreen() {
 
         {(currentPlan === 'balance' && isLateNight) && (
           <Animated.View entering={FadeInUp.duration(500)} style={styles.semaforoBanner}>
-             <Ionicons name="moon" size={24} color="#B39DDB" />
-             <View style={{flex: 1}}>
-               <Text style={styles.semaforoTitle}>Semáforo en Rojo</Text>
-               <Text style={styles.semaforoText}>Es tarde. El acceso a herramientas complejas está bloqueado para proteger tu descanso.</Text>
-             </View>
+            <Ionicons name="moon" size={24} color="#B39DDB" />
+            <View style={{ flex: 1 }}>
+              <Text style={styles.semaforoTitle}>Semáforo en Rojo</Text>
+              <Text style={styles.semaforoText}>Es tarde. El acceso a herramientas complejas está bloqueado para proteger tu descanso.</Text>
+            </View>
           </Animated.View>
         )}
 
-        {/* Activity Cards — staggered animation */}
         {sortedActivities.map((activity, i) => (
           <ActivityCard
             key={activity.id}
@@ -150,7 +137,6 @@ export default function ActividadesScreen() {
           />
         ))}
 
-        {/* Mascot at bottom */}
         <Animated.View entering={FadeInUp.duration(400).delay(500)} style={styles.mascotSection}>
           <Mascot size={120} variant={(currentPlan === 'balance' && isLateNight) ? "sleeping" : "meditating"} />
           <Text style={[styles.mascotText, { color: colors.textLight }]}>

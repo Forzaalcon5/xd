@@ -13,39 +13,38 @@ import { useTheme } from '../../hooks/useTheme';
 import { useStore, MoodType } from '../../store/useStore';
 import { EMOTIONAL_ROUTES } from '../../constants/clinicalContent';
 import { getAvatarSource } from '../../constants/avatars';
+import { supabase } from '../../lib/supabase';
 
 export default function HomeScreen() {
-   const router = useRouter();
-   const navigation = useNavigation();
-   const scrollViewRef = useRef<ScrollView>(null);
-   const { colors, isDark } = useTheme();
-   const userName = useStore((s) => s.userName);
-   const currentMood = useStore((s) => s.currentMood);
-   const setMood = useStore((s) => s.setMood);
-   const saveMoodEntry = useStore((s) => s.saveMoodEntry);
-   const recentActivities = useStore((s) => s.recentActivities);
-   const weeklyMoodData = useStore((s) => s.weeklyMoodData);
-   const currentPlan = useStore((s) => s.currentPlan);
-   const profileAvatar = useStore((s) => s.profileAvatar);
-   const avatarSource = getAvatarSource(profileAvatar);
-   const activeRoute = EMOTIONAL_ROUTES.find(r => r.id === currentPlan);
-   const [showNotifications, setShowNotifications] = useState(false);
-   const [showXPGain, setShowXPGain] = useState(false);
-   const [shouldScrollToMood, setShouldScrollToMood] = useState(false);
+  const router = useRouter();
+  const navigation = useNavigation();
+  const scrollViewRef = useRef<ScrollView>(null);
+  const { colors, isDark } = useTheme();
+  const userName = useStore((s) => s.userName);
+  const currentMood = useStore((s) => s.currentMood);
+  const setMood = useStore((s) => s.setMood);
+  const saveMoodEntry = useStore((s) => s.saveMoodEntry);
+  const recentActivities = useStore((s) => s.recentActivities);
+  const weeklyMoodData = useStore((s) => s.weeklyMoodData);
+  const currentPlan = useStore((s) => s.currentPlan);
+  const profileAvatar = useStore((s) => s.profileAvatar);
+  const avatarSource = getAvatarSource(profileAvatar);
+  const activeRoute = EMOTIONAL_ROUTES.find(r => r.id === currentPlan);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [showXPGain, setShowXPGain] = useState(false);
+  const [showRouteInfo, setShowRouteInfo] = useState(false);
 
   const handleRegisterMood = useCallback(() => {
     saveMoodEntry();
     setShowXPGain(true);
     setTimeout(() => setShowXPGain(false), 1500);
   }, [saveMoodEntry]);
-  const [showRouteInfo, setShowRouteInfo] = useState(false);
 
   const notificationsMock = [
     { id: '1', title: '¡Bienvenido a Anima!', desc: 'Nos alegra tenerte aquí. Recuerda revisar tu plan diario.', time: 'Hace 2h' },
     { id: '2', title: 'Tiempo de Pausa', desc: 'Tomarse 5 minutos para respirar ayuda mucho.', time: 'Hace 5h' },
   ];
 
-  // RF-17: Dynamic greeting based on time of day
   const greeting = useMemo(() => {
     const hour = new Date().getHours();
     if (hour < 12) return 'Buenos días';
@@ -53,7 +52,6 @@ export default function HomeScreen() {
     return 'Buenas noches';
   }, []);
 
-  // RF-16: Daily affirmation (Now route-specific)
   const affirmation = useMemo(() => {
     const dayOfYear = Math.floor((Date.now() - new Date(new Date().getFullYear(), 0, 0).getTime()) / 86400000);
     const quoteArray = activeRoute?.dailyQuotes || DAILY_AFFIRMATIONS;
@@ -71,7 +69,7 @@ export default function HomeScreen() {
     }
   }, [currentPlan]);
 
-  // Scroll a la sección de ánimo cuando viene de registro vacío
+  // ── Scroll a mood cuando viene de registro vacío ──────────────────────────
   useEffect(() => {
     const unsubscribe = navigation.addListener('focus', () => {
       const scrollToMood = useStore.getState()._scrollToMood;
@@ -85,6 +83,57 @@ export default function HomeScreen() {
     return unsubscribe;
   }, [navigation]);
 
+  // ── Fetch actividades recientes desde Supabase ────────────────────────────
+  useEffect(() => {
+    const loadRecentActivities = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data, error } = await supabase
+        .from('activity_logs')
+        .select('activity_name, activity_id, started_at, completed')
+        .eq('user_id', user.id)
+        .order('started_at', { ascending: false })
+        .limit(5);
+
+      if (error || !data) return;
+
+      const iconMap: Record<string, { icon: string; color: string }> = {
+        '1':  { icon: 'water-outline',     color: '#87CEEB' },
+        '2':  { icon: 'star-outline',      color: '#FCD34D' },
+        '3':  { icon: 'leaf-outline',      color: '#A8E6CF' },
+        '4':  { icon: 'eye-outline',       color: '#B39DDB' },
+        '5':  { icon: 'heart-outline',     color: '#E56B8A' },
+        '6':  { icon: 'timer-outline',     color: '#F6AD55' },
+        '7':  { icon: 'book-outline',      color: '#68D391' },
+        '8':  { icon: 'trophy-outline',    color: '#FCD34D' },
+        '9':  { icon: 'hand-left-outline', color: '#B39DDB' },
+        '10': { icon: 'mail-outline',      color: '#87CEEB' },
+      };
+
+      const mapped = data.map((log) => {
+        const meta = iconMap[log.activity_id] ?? { icon: 'checkmark-circle-outline', color: '#38B2AC' };
+        const diffMin = Math.floor((Date.now() - new Date(log.started_at).getTime()) / 60000);
+        const time =
+          diffMin < 60   ? `Hace ${diffMin} min` :
+          diffMin < 1440 ? `Hace ${Math.floor(diffMin / 60)}h` :
+                           `Hace ${Math.floor(diffMin / 1440)}d`;
+
+        return {
+          title:  log.activity_name,
+          time,
+          detail: log.completed ? 'Completada' : 'En progreso',
+          icon:   meta.icon,
+          color:  meta.color,
+        };
+      });
+
+      useStore.setState({ recentActivities: mapped });
+    };
+
+    loadRecentActivities();
+  }, []);
+
   return (
     <View style={styles.container}>
       <FloatingParticles count={6} />
@@ -95,7 +144,7 @@ export default function HomeScreen() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {/* Header with greeting (RF-17) */}
+        {/* Header */}
         <Animated.View entering={FadeInUp.duration(400)} style={styles.header}>
           <View style={{ flex: 1, paddingRight: 16 }}>
             <Text style={[styles.greeting, { color: colors.textPrimary }]} numberOfLines={1} adjustsFontSizeToFit>
@@ -104,7 +153,7 @@ export default function HomeScreen() {
             <Text style={[styles.subtitle, { color: colors.textLight }]}>{welcomeSubtitle}</Text>
           </View>
           <View style={{ alignItems: 'center', gap: 4 }}>
-            <Pressable 
+            <Pressable
               style={[styles.notifBtn, { backgroundColor: colors.bgCard, borderColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.04)' }]}
               onPress={() => setShowNotifications(true)}
             >
@@ -120,34 +169,34 @@ export default function HomeScreen() {
           </View>
         </Animated.View>
 
-        {/* Mascot (RF-19) */}
+        {/* Mascot */}
         <Animated.View entering={FadeIn.duration(600).delay(200)} style={styles.mascotSection}>
           <Mascot size={130} variant="greeting" />
         </Animated.View>
 
-        {/* Feature buttons (quick access) */}
+        {/* Feature buttons */}
         <Animated.View entering={FadeInUp.duration(400).delay(300)} style={styles.featureRow}>
           <FeatureButton title="Gratitud" icon="star-outline" color="#FCD34D" onPress={() => router.push('/actividades/gratitud')} />
           <FeatureButton title="Actividades" icon="sparkles-outline" color={Colors.secondary} onPress={() => router.push('/(tabs)/actividades')} />
           <FeatureButton title="Chat" icon="chatbubbles-outline" color={Colors.mint} onPress={() => router.push('/(tabs)/chat')} />
         </Animated.View>
 
-        {/* Daily Affirmation (RF-16) & Active Route */}
+        {/* Daily Affirmation & Active Route */}
         <Animated.View entering={FadeInUp.duration(400).delay(400)}>
           <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 16 }}>
-            <SectionHeader 
-              title={activeRoute ? `Tu ruta: ${activeRoute.title}` : "Frase del día"} 
-              subtitle="Tu inspiración diaria ✨" 
+            <SectionHeader
+              title={activeRoute ? `Tu ruta: ${activeRoute.title}` : "Frase del día"}
+              subtitle="Tu inspiración diaria ✨"
               style={{ marginBottom: 0, flex: 1 }}
             />
             {activeRoute && (
-              <Pressable 
+              <Pressable
                 onPress={() => setShowRouteInfo(true)}
                 style={({ pressed }) => [{
                   width: 40, height: 40, borderRadius: 20,
                   backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)',
                   alignItems: 'center', justifyContent: 'center',
-                  marginLeft: 10
+                  marginLeft: 10,
                 }, pressed && { opacity: 0.7 }]}
               >
                 <Ionicons name="ellipsis-horizontal" size={20} color={colors.textLight} />
@@ -162,19 +211,19 @@ export default function HomeScreen() {
           </GlassCard>
         </Animated.View>
 
-        {/* Micro-Challenge Card (Dynamic Strategy Implementation) */}
+        {/* Micro-Challenge */}
         <Animated.View entering={FadeInUp.duration(400).delay(450)}>
           <SectionHeader title="Rompiendo el Bucle" subtitle="Tu micro-reto de hoy" />
           <MicroChallengeCard />
         </Animated.View>
 
-        {/* Connection Radar Tracker (Dynamic Strategy Implementation) */}
+        {/* Connection Radar */}
         <Animated.View entering={FadeInUp.duration(400).delay(480)}>
           <SectionHeader title="Radar de Conexión" subtitle="Citas contigo mismo" />
           <ConnectionRadarCard />
         </Animated.View>
 
-        {/* Mood Selector Card (RF-11, RF-20) */}
+        {/* Mood Selector */}
         <Animated.View entering={FadeInUp.duration(400).delay(500)}>
           <SectionHeader title="¿Cómo te sientes?" subtitle="Selecciona tu estado de ánimo" />
           <GlassCard style={styles.moodCard}>
@@ -204,7 +253,7 @@ export default function HomeScreen() {
           </GlassCard>
         </Animated.View>
 
-        {/* Recent Activities */}
+        {/* Recent Activities — ahora con datos reales de Supabase */}
         <Animated.View entering={FadeInUp.duration(400).delay(600)}>
           <SectionHeader title="Actividades recientes" />
           {recentActivities.length > 0 ? (
@@ -228,17 +277,17 @@ export default function HomeScreen() {
           )}
         </Animated.View>
 
-        {/* Weekly Wellness Ring (RF-18) */}
+        {/* Weekly Wellness Ring */}
         <Animated.View entering={FadeInUp.duration(400).delay(600)}>
           <SectionHeader title="Bienestar Semanal" />
           <GlassCard style={{ alignItems: 'center', paddingVertical: 20 }}>
-             <WeeklyProgressRing data={weeklyMoodData} />
-             <Text style={{ textAlign: 'center', marginTop: 12, color: colors.textLight, fontSize: 13, maxWidth: 200 }}>
-               Tu balance emocional de los últimos 7 días.
-             </Text>
+            <WeeklyProgressRing data={weeklyMoodData} />
+            <Text style={{ textAlign: 'center', marginTop: 12, color: colors.textLight, fontSize: 13, maxWidth: 200 }}>
+              Tu balance emocional de los últimos 7 días.
+            </Text>
           </GlassCard>
         </Animated.View>
-        
+
         <View style={{ height: 100 }} />
       </ScrollView>
 
@@ -252,7 +301,6 @@ export default function HomeScreen() {
                 <Ionicons name="close" size={24} color={colors.textLight} />
               </Pressable>
             </View>
-
             <ScrollView style={styles.notifList} showsVerticalScrollIndicator={false}>
               {notificationsMock.map((notif, index) => (
                 <View key={notif.id} style={[styles.notifItem, index < notificationsMock.length - 1 && { borderBottomWidth: 1, borderBottomColor: 'rgba(150,150,150,0.1)' }]}>
@@ -284,16 +332,12 @@ export default function HomeScreen() {
                   <Ionicons name="close" size={24} color={colors.textLight} />
                 </Pressable>
               </View>
-              
               <Text style={[styles.modalTitle, { color: colors.textPrimary, fontSize: 22 }]}>{activeRoute.title}</Text>
               <Text style={[{ color: activeRoute.color, fontFamily: 'Poppins_600SemiBold', marginBottom: 16 }]}>{activeRoute.subtitle}</Text>
-              
               <ScrollView style={{ maxHeight: 300 }} showsVerticalScrollIndicator={false}>
                 <Text style={[{ color: colors.textSecondary, marginBottom: 20, lineHeight: 22, fontFamily: 'Poppins_400Regular' }]}>{activeRoute.description}</Text>
-                
                 <Text style={[{ color: colors.textPrimary, fontFamily: 'Poppins_600SemiBold', marginBottom: 8 }]}>Área de Enfoque</Text>
                 <Text style={[{ color: colors.textSecondary, marginBottom: 16, fontFamily: 'Poppins_400Regular' }]}>{activeRoute.focusArea}</Text>
-
                 <Text style={[{ color: colors.textPrimary, fontFamily: 'Poppins_600SemiBold', marginBottom: 8 }]}>Estrategias</Text>
                 {activeRoute.strategies.map((strategy: string, i: number) => (
                   <View key={i} style={{ flexDirection: 'row', alignItems: 'flex-start', marginBottom: 8, gap: 8 }}>
@@ -302,13 +346,11 @@ export default function HomeScreen() {
                   </View>
                 ))}
               </ScrollView>
-
               <JewelButton title="Entendido" onPress={() => setShowRouteInfo(false)} style={{ marginTop: 24, width: '100%' }} />
             </Animated.View>
           </View>
         </Modal>
       )}
-
     </View>
   );
 }
@@ -345,18 +387,13 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.accent,
     zIndex: 1,
   },
-  mascotSection: {
-    alignItems: 'center', marginVertical: 16,
-  },
+  mascotSection: { alignItems: 'center', marginVertical: 16 },
   featureRow: {
-    flexDirection: 'row', justifyContent: 'space-around',
-    marginBottom: 24,
+    flexDirection: 'row', justifyContent: 'space-around', marginBottom: 24,
   },
   affirmationCard: {
-    flexDirection: 'row', alignItems: 'center', gap: 12,
-    marginBottom: 24,
-    borderLeftWidth: 3,
-    borderLeftColor: Colors.accent,
+    flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 24,
+    borderLeftWidth: 3, borderLeftColor: Colors.accent,
   },
   affirmationIconWrap: {
     width: 32, height: 32, borderRadius: 10,
@@ -365,28 +402,15 @@ const styles = StyleSheet.create({
   },
   affirmationText: {
     flex: 1, fontSize: 13, color: Colors.textSecondary,
-    fontFamily: 'Poppins_400Regular', fontStyle: 'italic',
-    lineHeight: 20,
+    fontFamily: 'Poppins_400Regular', fontStyle: 'italic', lineHeight: 20,
   },
   moodCard: { marginBottom: 24 },
-  moodRow: {
-    flexDirection: 'row', justifyContent: 'space-around',
-  },
-  recentCard: {
-    flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 8,
-  },
-  recentIcon: {
-    width: 40, height: 40, borderRadius: 12,
-    justifyContent: 'center', alignItems: 'center',
-  },
-  recentTitle: {
-    fontSize: 14, fontWeight: '600', color: Colors.textPrimary,
-    fontFamily: 'Poppins_600SemiBold',
-  },
+  moodRow: { flexDirection: 'row', justifyContent: 'space-around' },
+  recentCard: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 8 },
+  recentIcon: { width: 40, height: 40, borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
+  recentTitle: { fontSize: 14, fontWeight: '600', color: Colors.textPrimary, fontFamily: 'Poppins_600SemiBold' },
   recentTime: { fontSize: 11, color: Colors.textLight },
   recentDetail: { fontSize: 12, color: Colors.mint, fontWeight: '500' },
-  
-  // Modal Styles
   modalOverlay: {
     flex: 1, backgroundColor: 'rgba(0,0,0,0.5)',
     justifyContent: 'center', alignItems: 'center', padding: 20,
@@ -398,31 +422,13 @@ const styles = StyleSheet.create({
   modalHeader: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20,
   },
-  modalTitle: {
-    fontSize: 20, fontWeight: '700', fontFamily: 'Poppins_700Bold',
-  },
-  closeBtn: {
-    padding: 4,
-  },
-  notifList: {
-    maxHeight: 400,
-  },
-  notifItem: {
-    flexDirection: 'row', gap: 16, paddingVertical: 16,
-  },
-  notifIconWrap: {
-    width: 44, height: 44, borderRadius: 22, justifyContent: 'center', alignItems: 'center',
-  },
-  notifTextWrap: {
-    flex: 1,
-  },
-  notifItemTitle: {
-    fontSize: 15, fontWeight: '600', fontFamily: 'Poppins_600SemiBold', marginBottom: 4,
-  },
-  notifItemDesc: {
-    fontSize: 13, fontFamily: 'Poppins_400Regular', lineHeight: 20, marginBottom: 6,
-  },
-  notifItemTime: {
-    fontSize: 11, fontFamily: 'Poppins_400Regular',
-  },
+  modalTitle: { fontSize: 20, fontWeight: '700', fontFamily: 'Poppins_700Bold' },
+  closeBtn: { padding: 4 },
+  notifList: { maxHeight: 400 },
+  notifItem: { flexDirection: 'row', gap: 16, paddingVertical: 16 },
+  notifIconWrap: { width: 44, height: 44, borderRadius: 22, justifyContent: 'center', alignItems: 'center' },
+  notifTextWrap: { flex: 1 },
+  notifItemTitle: { fontSize: 15, fontWeight: '600', fontFamily: 'Poppins_600SemiBold', marginBottom: 4 },
+  notifItemDesc: { fontSize: 13, fontFamily: 'Poppins_400Regular', lineHeight: 20, marginBottom: 6 },
+  notifItemTime: { fontSize: 11, fontFamily: 'Poppins_400Regular' },
 });
